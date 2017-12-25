@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html {% if(o.htmlWebpackPlugin.files.manifest) { %} manifest="{%= o.htmlWebpackPlugin.files.manifest %}" {% } %}>
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    {% if (o.htmlWebpackPlugin.files.favicon) { %}
+    <link rel="shortcut icon" href="/ui/images/favicon?{%=o.htmlWebpackPlugin.options.cacheBusterQuery()%}">
+    {% } %}
+    {% for (var css in o.htmlWebpackPlugin.files.css) { %}
+    <a href="{%=o.htmlWebpackPlugin.files.css[css] %}" rel="stylesheet">
+    {% } %}
+</head>
+<body>
+
+    <div id="root"></div>
+    {% if (o.htmlWebpackPlugin.options.cluster_version) { %}
+    <script type="text/javascript">
+        window.__CLUSTER_VERSION__ = {%# o.htmlWebpackPlugin.options.cluster_version %};
+    </script>
+    {% } %}
+    {% for (var chunk in o.htmlWebpackPlugin.files.chunks) { %}
+    <script src="{%=o.htmlWebpackPlugin.files.chunks[chunk].entry %}"></script>
+    {% } %}
+</body>
+</html>
