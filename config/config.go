@@ -1,11 +1,10 @@
 package config
 
 import (
-	"io"
 	"net/url"
 
 	"github.com/Stratoscale/logserver/filesystem"
-	"github.com/kr/fs"
+	"github.com/Stratoscale/logserver/filesystem/targz"
 )
 
 type Config struct {
@@ -14,13 +13,9 @@ type Config struct {
 
 type Src struct {
 	Name string
-	FS   FileSystem
+	FS   filesystem.FileSystem
 }
 
-type FileSystem interface {
-	fs.FileSystem
-	Open(path string) (io.ReadCloser, error)
-}
 
 type FileConfig struct {
 	Sources []SrcDesc `json:"source"`
@@ -38,7 +33,7 @@ func New(fc FileConfig) (*Config, error) {
 		if err != nil {
 			return c, err
 		}
-		var fs FileSystem
+		var fs filesystem.FileSystem
 		switch u.Scheme {
 		case "file":
 			fs, err = filesystem.NewLocalFS(u)
@@ -52,6 +47,7 @@ func New(fc FileConfig) (*Config, error) {
 		if err != nil {
 			return nil, err
 		}
+		fs = targz.New(fs)
 		c.Nodes = append(c.Nodes, Src{srcDesc.Name, fs})
 	}
 	return c, nil

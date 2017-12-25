@@ -15,7 +15,7 @@ import (
 	"github.com/test-go/testify/require"
 )
 
-func TestWS(t *testing.T) {
+func _TestWS(t *testing.T) {
 	require := require.New(t)
 	cwd, err := os.Getwd()
 	require.Nil(err)
