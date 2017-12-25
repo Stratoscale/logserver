@@ -10,4 +10,4 @@ import "github.com/gobuffalo/packr"
 // and any other packr generated files.
 func init() {
 	packr.PackJSONBytes("./client/dist", "index.html", "\"PGh0bWw+aGkgbW9zaGU8L2h0bWw+\"")
-	}
+}
