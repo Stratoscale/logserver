@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -12,11 +13,13 @@ import (
 )
 
 var options struct {
+	port       int
 	configFile string
 }
 
 func init() {
-	flag.StringVar(&options.configFile, "config", "", "path to a config file")
+	flag.IntVar(&options.port, "port", 8888, "Listen port")
+	flag.StringVar(&options.configFile, "config", "", "Path to a config file")
 }
 
 func main() {
@@ -29,12 +32,11 @@ func main() {
 	}
 
 	h := handler.New(*c)
-
 	r := mux.NewRouter()
 	r.Methods(http.MethodGet).Path("/ws").Handler(h)
 
-	log.Printf("serving on http://localhost:8888")
-	err = http.ListenAndServe(":8888", r)
+	log.Printf("serving on http://localhost:%d", options.port)
+	err = http.ListenAndServe(fmt.Sprintf(":%d", options.port), r)
 	if err != nil {
 		panic(err)
 	}
