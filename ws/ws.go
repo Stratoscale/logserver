@@ -77,6 +77,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ch := make(chan interface{})
+	defer close(ch)
 	go reader(conn, ch)
 
 	for {
@@ -100,7 +101,6 @@ func reader(conn *websocket.Conn, ch <-chan interface{}) {
 }
 
 func (h *handler) serve(ch chan<- interface{}, r Request) {
-	defer close(ch)
 	path := filepath.Join(r.Path...)
 	if path == "" {
 		path = "/"
@@ -147,7 +147,7 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 		wg.Add(len(h.Nodes))
 		for _, node := range h.Nodes {
 			go func(node config.Src) {
-				h.search(ch, r, node, path, nil)
+				h.read(ch, r, node, path, nil)
 				wg.Done()
 			}(node)
 		}
@@ -177,16 +177,24 @@ func (h *handler) search(ch chan<- interface{}, req Request, node config.Src, pa
 	var walker = fs.WalkFS(path, node.FS)
 	for walker.Step() {
 		if err := walker.Err(); err != nil {
-			log.Printf("walk: %s", err)
+			log.Printf("Walk: %s", err)
 			continue
 		}
 		filePath := walker.Path()
-
 		h.read(ch, req, node, filePath, re)
 	}
 }
 
 func (h *handler) read(ch chan<- interface{}, req Request, node config.Src, path string, re *regexp.Regexp) {
+	stat, err := node.FS.Lstat(path)
+	if err != nil {
+		log.Printf("Stat %s: %s", path, err)
+		return
+	}
+	if stat.IsDir() {
+		return
+	}
+
 	r, err := node.FS.Open(path)
 	if err != nil {
 		log.Printf("Open %s: %s", path, err)
@@ -202,10 +210,9 @@ func (h *handler) read(ch chan<- interface{}, req Request, node config.Src, path
 		fileOffset = 0
 	)
 	for scanner.Scan() {
-		if err := scanner.Err(); err != nil {
-			log.Println("scan:", err)
-		}
 		if re != nil && !re.Match(scanner.Bytes()) {
+			lineNumber += 1
+			fileOffset += len(scanner.Bytes())
 			continue
 		}
 
@@ -219,7 +226,6 @@ func (h *handler) read(ch chan<- interface{}, req Request, node config.Src, path
 		logLine.LineNumber = lineNumber
 
 		logLines = append(logLines, *logLine)
-
 		lineNumber += 1
 		fileOffset += len(scanner.Bytes())
 
@@ -230,9 +236,10 @@ func (h *handler) read(ch chan<- interface{}, req Request, node config.Src, path
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		log.Println("Reading standard input:", err)
+		log.Println("Scan:", err)
 		return
 	}
-
-	ch <- &ResponseContent{Metadata: req.Metadata, Lines: logLines}
+	if len(logLines) > 0 {
+		ch <- &ResponseContent{Metadata: req.Metadata, Lines: logLines}
+	}
 }
