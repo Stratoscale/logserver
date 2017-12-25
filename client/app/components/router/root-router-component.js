@@ -3,7 +3,7 @@ import {Provider} from 'react-redux'
 import {browserHistory} from 'router/history'
 import {Route, Switch} from 'react-router'
 import {ConnectedRouter} from 'react-router-redux'
-import FolderTree from 'folder-tree';
+import Home from 'layouts/home'
 
 export default class RootRouterComponent extends React.Component {
   render() {
@@ -11,7 +11,7 @@ export default class RootRouterComponent extends React.Component {
       <Provider store={this.props.store}>
         <ConnectedRouter history={browserHistory}>
           <Switch>
-            <Route path="/" component={FolderTree}/>
+            <Route path="/" component={Home}/>
           </Switch>
         </ConnectedRouter>
       </Provider>

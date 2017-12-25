@@ -18,9 +18,13 @@ type handler struct {
 	config.Config
 }
 
+type Metadata struct {
+	ID int `json:"id"`
+	Action string `json:"action"`
+}
+
 type request struct {
-	ID       int    `json:"id"`
-	Action   string `json:"action"`
+	Metadata `json:"meta"`
 	BasePath path   `json:"base_path"`
 }
 
@@ -33,6 +37,15 @@ const (
 	dir  fileType = "dir"
 )
 
+type debugLevel string
+
+const (
+	levelDebug debugLevel = "debug"
+	levelInfo debugLevel = "info"
+	levelError debugLevel = "error"
+	levelWarning debugLevel = "warning"
+)
+
 type fsElement struct {
 	Path path     `json:"path"`
 	Type fileType `json:"type"`
@@ -40,13 +53,24 @@ type fsElement struct {
 	FS   string   `json:"fs"`
 }
 
-type response struct {
-	ID int `json:"id"`
+type fileTreeResponse struct {
+	Metadata `json:"meta"`
+	Tree []fsElement `json:"tree"`
 }
 
-type fileTreeResponse struct {
-	response
-	Tree []fsElement `json:"tree"`
+type LogLine struct {
+	Msg string `json:"msg"`
+	Level debugLevel `json:"level"`
+	Time string `json:"time"`
+	FS string `json:"fs"`
+	FileName string `json:"file-name"`
+	LineNumber int `json:"line-number"`
+	Offset int `json:"offset"`
+}
+
+type contentResponse struct {
+	Metadata `json:"meta"`
+	Lines []LogLine `json:"line"`
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +105,7 @@ func (h *handler) serve(w connWriter, r request) {
 
 		// TODO: user basepath to get file system tree
 		w.WriteJSON(&fileTreeResponse{
-			response: response{ID: r.ID},
+			Metadata: Metadata{ID: r.ID, Action: r.Action},
 			Tree: []fsElement{
 				{Path: []string{"var"}, Type: dir, FS: "node0"},
 				{Path: []string{"var"}, Type: dir, FS: "node1"},
@@ -91,6 +115,31 @@ func (h *handler) serve(w connWriter, r request) {
 				{Path: []string{"var", "log", "keystone.log"}, Type: file, Size: 10, FS: "node0"},
 				{Path: []string{"var", "log", "keystone.log"}, Type: file, Size: 15, FS: "node1"},
 				{Path: []string{"var", "log", "nova.log"}, Type: file, Size: 10},
+			},
+		})
+	case "get-content":
+		_ = r.BasePath
+		// TODO: user basepath to get file system tree
+		w.WriteJSON(&contentResponse{
+			Metadata: Metadata{ID: r.ID, Action: r.Action},
+			Lines: []LogLine{
+				{Msg: "bla bla bla", Level: "debug", FS: "node0", FileName: "bla.log", LineNumber: 1},
+				{Msg: "bla bla", Level: "debug", FS: "node1", FileName: "bla.log", LineNumber: 100},
+				{Msg: "harta barta", Level: "info", FS: "node1", FileName: "harta.log", LineNumber: 1},
+				{Msg: "harta barta", Level: "info", FS: "node2", FileName: "harta.log", LineNumber: 7},
+			},
+		})
+	case "search":
+		_ = r.BasePath
+		// TODO: user basepath to get file system tree
+		w.WriteJSON(&contentResponse{
+			Metadata: Metadata{ID: r.ID, Action: r.Action},
+			Lines: []LogLine{
+				{Msg: "bla bla bla", Level: levelDebug, FS: "node0", FileName: "bla.log", LineNumber: 1},
+				{Msg: "bla bla", Level: levelDebug, FS: "node1", FileName: "bla.log", LineNumber: 100},
+				{Msg: "harta barta", Level: levelWarning, FS: "node1", FileName: "harta.log", LineNumber: 1},
+				{Msg: "harta barta", Level: levelInfo, FS: "node2", FileName: "harta.log", LineNumber: 7},
+				{Msg: "panic error!", Level: levelError, FS: "node2", FileName: "harta.log", LineNumber: 7},
 			},
 		})
 	}
