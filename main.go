@@ -1,14 +1,14 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
 
-	"flag"
-
 	"github.com/Stratoscale/logserver/config"
 	"github.com/Stratoscale/logserver/handler"
+	"github.com/gobuffalo/packr"
 	"github.com/gorilla/mux"
 )
 
@@ -31,9 +31,12 @@ func main() {
 		panic(err)
 	}
 
-	h := handler.New(*c)
+	ws := handler.New(*c)
+	static := http.FileServer(packr.NewBox("./client/dist"))
+
 	r := mux.NewRouter()
-	r.Methods(http.MethodGet).Path("/ws").Handler(h)
+	r.Methods(http.MethodGet).Path("/ws").Handler(ws)
+	r.Methods(http.MethodGet).PathPrefix("/").Handler(static)
 
 	log.Printf("serving on http://localhost:%d", options.port)
 	err = http.ListenAndServe(fmt.Sprintf(":%d", options.port), r)
