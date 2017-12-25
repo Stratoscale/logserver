@@ -49,6 +49,21 @@ type fileTreeResponse struct {
 	Tree []fsElement `json:"tree"`
 }
 
+type LogLine struct {
+	Msg string `json:"msg"`
+	Level string `json:"level"`
+	Time string `json:"time"`
+	FS string `json:"fs"`
+	FileName string `json:"file-name"`
+	LineNumber int `json:"line-number"`
+	Offset int `json:"offset"`
+}
+
+type contentResponse struct {
+	response
+	Lines []LogLine `json:"line"`
+}
+
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Got ws request from: %s", r.RemoteAddr)
 	u := new(websocket.Upgrader)
@@ -91,6 +106,30 @@ func (h *handler) serve(w connWriter, r request) {
 				{Path: []string{"var", "log", "keystone.log"}, Type: file, Size: 10, FS: "node0"},
 				{Path: []string{"var", "log", "keystone.log"}, Type: file, Size: 15, FS: "node1"},
 				{Path: []string{"var", "log", "nova.log"}, Type: file, Size: 10},
+			},
+		})
+	case "get-content":
+		_ = r.BasePath
+		// TODO: user basepath to get file system tree
+		w.WriteJSON(&contentResponse{
+			response: response{ID: r.ID},
+			Lines: []LogLine{
+				{Msg: "bla bla bla", Level: "debug", FS: "node0", FileName: "bla.log", LineNumber: 1},
+				{Msg: "bla bla", Level: "debug", FS: "node1", FileName: "bla.log", LineNumber: 100},
+				{Msg: "harta barta", Level: "info", FS: "node1", FileName: "harta.log", LineNumber: 1},
+				{Msg: "harta barta", Level: "info", FS: "node2", FileName: "harta.log", LineNumber: 7},
+			},
+		})
+	case "search":
+		_ = r.BasePath
+		// TODO: user basepath to get file system tree
+		w.WriteJSON(&contentResponse{
+			response: response{ID: r.ID},
+			Lines: []LogLine{
+				{Msg: "bla bla bla", Level: "debug", FS: "node0", FileName: "bla.log", LineNumber: 1},
+				{Msg: "bla bla", Level: "debug", FS: "node1", FileName: "bla.log", LineNumber: 100},
+				{Msg: "harta barta", Level: "info", FS: "node1", FileName: "harta.log", LineNumber: 1},
+				{Msg: "harta barta", Level: "info", FS: "node2", FileName: "harta.log", LineNumber: 7},
 			},
 		})
 	}
