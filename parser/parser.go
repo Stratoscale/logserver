@@ -27,7 +27,7 @@ type LogLine struct {
 	Offset     int        `json:"offset"`
 }
 
-type Parser func(line string) (*LogLine, error)
+type Parser func(line []byte) (*LogLine, error)
 
 func GetParser(suffix string) Parser {
 	parser := parsers[suffix]
@@ -48,9 +48,9 @@ type stratologFormat struct {
 	Args  []interface{} `json:"args"`
 }
 
-func stratologParser(line string) (*LogLine, error) {
+func stratologParser(line []byte) (*LogLine, error) {
 	var stratoFormat stratologFormat
-	err := json.Unmarshal([]byte(line), &stratoFormat)
+	err := json.Unmarshal(line, &stratoFormat)
 	if err != nil {
 		log.Printf("Failed to pars line: %s", line)
 		return nil, err
@@ -66,8 +66,8 @@ func stratologParser(line string) (*LogLine, error) {
 	}, nil
 }
 
-func defaultParser(line string) (*LogLine, error) {
+func defaultParser(line []byte) (*LogLine, error) {
 	return &LogLine{
-		Msg: line,
+		Msg: string(line),
 	}, nil
 }

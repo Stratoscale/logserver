@@ -67,10 +67,10 @@ func TestWS_GetContentStratolog(t *testing.T) {
 
 	require.Nil(conn.WriteMessage(1, []byte(`{"meta":{"action":"get-content","id":9},"path":["mancala.stratolog"]}`)))
 
-	var resp ws.ContentResponse
+	var resp ws.ResponseContent
 	require.Nil(conn.ReadJSON(&resp))
 
-	expResp := ws.ContentResponse{
+	expResp := ws.ResponseContent{
 		Metadata: ws.Metadata{ID: 9, Action: "get-content"},
 		Lines: []parser.LogLine{
 			parser.LogLine{Msg: "data disk <disk: hostname=stratonode1.node.strato, ID=dce9381a-cada-434d-a1ba-4e351f4afcbb, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "mancala.stratolog", LineNumber: 1, Offset: 0},

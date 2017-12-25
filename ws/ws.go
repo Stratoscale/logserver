@@ -7,6 +7,10 @@ import (
 	"path/filepath"
 	"sync"
 
+	"regexp"
+
+	"fmt"
+
 	"github.com/Stratoscale/logserver/config"
 	"github.com/Stratoscale/logserver/parser"
 	"github.com/gorilla/websocket"
@@ -31,6 +35,7 @@ type Metadata struct {
 type Request struct {
 	Metadata `json:"meta"`
 	Path     pathArr `json:"path"`
+	Regexp   string  `json:"regexp"`
 }
 
 type pathArr []string
@@ -52,9 +57,14 @@ type ResponseFileTree struct {
 	Tree     []fsElement `json:"tree"`
 }
 
-type ContentResponse struct {
+type ResponseContent struct {
 	Metadata `json:"meta"`
 	Lines    []parser.LogLine `json:"lines"`
+}
+
+type ResponseError struct {
+	Metadata `json:"meta"`
+	Error    string
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -106,7 +116,7 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 			walker := fs.WalkFS(path, node.FS)
 			for walker.Step() {
 				if err := walker.Err(); err != nil {
-					log.Println(err)
+					log.Printf("walk: %s", err)
 					continue
 				}
 
@@ -128,86 +138,94 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 		}
 		// reply
 		ch <- &ResponseFileTree{
-			Metadata: Metadata{ID: r.ID, Action: r.Action},
+			Metadata: r.Metadata,
 			Tree:     fsElements,
 		}
 
 	case "get-content":
 		wg := sync.WaitGroup{}
+		wg.Add(len(h.Nodes))
 		for _, node := range h.Nodes {
-			stat, err := node.FS.Lstat(path)
-			if err != nil {
-				log.Printf("Stat file %s: %s", path, err)
-				continue
-			}
-
-			if stat.IsDir() {
-				continue
-			}
-			wg.Add(1)
 			go func(node config.Src) {
-				defer wg.Done()
-				h.readContent(ch, r, node, path)
+				h.search(ch, r, node, path, nil)
+				wg.Done()
 			}(node)
 		}
 		wg.Wait()
 
 	case "search":
-		_ = r.Path
-		// TODO: user basepath to get file system tree
-		ch <- &ContentResponse{
-			Metadata: Metadata{ID: r.ID, Action: r.Action},
-			Lines: []parser.LogLine{
-				{Msg: "bla bla bla", Level: "debug", FS: "node0", FileName: "bla.log", LineNumber: 1},
-				{Msg: "bla bla", Level: "debug", FS: "node1", FileName: "bla.log", LineNumber: 100},
-				{Msg: "harta barta", Level: "debug", FS: "node1", FileName: "harta.log", LineNumber: 1},
-				{Msg: "harta barta", Level: "debug", FS: "node2", FileName: "harta.log", LineNumber: 7},
-				{Msg: "panic error!", Level: "debug", FS: "node2", FileName: "harta.log", LineNumber: 7},
-			},
+		re, err := regexp.Compile(r.Regexp)
+		if err != nil {
+			ch <- &ResponseError{
+				Metadata: r.Metadata,
+				Error:    fmt.Sprintf("Bad regexp %s: %s", r.Regexp, err),
+			}
 		}
+		wg := sync.WaitGroup{}
+		wg.Add(len(h.Nodes))
+		for _, node := range h.Nodes {
+			go func(node config.Src) {
+				h.search(ch, r, node, path, re)
+				wg.Done()
+			}(node)
+		}
+		wg.Wait()
 	}
 }
 
-func (h *handler) readContent(ch chan<- interface{}, r Request, src config.Src, s string) {
-	rc, err := src.FS.Open(s)
+func (h *handler) search(ch chan<- interface{}, req Request, node config.Src, path string, re *regexp.Regexp) {
+	var walker = fs.WalkFS(path, node.FS)
+	for walker.Step() {
+		if err := walker.Err(); err != nil {
+			log.Printf("walk: %s", err)
+			continue
+		}
+		filePath := walker.Path()
+
+		h.read(ch, req, node, filePath, re)
+	}
+}
+
+func (h *handler) read(ch chan<- interface{}, req Request, node config.Src, path string, re *regexp.Regexp) {
+	r, err := node.FS.Open(path)
 	if err != nil {
-		log.Printf("Open file %s: %s", s, err)
+		log.Printf("Open %s: %s", path, err)
 		return
 	}
-	defer rc.Close()
+	defer r.Close()
 
-	pars := parser.GetParser(filepath.Ext(s))
-	scanner := bufio.NewScanner(rc)
-
-	var logLines []parser.LogLine
-	lineNumber := 1
-	fileOffset := 0
+	var (
+		pars       = parser.GetParser(filepath.Ext(path))
+		scanner    = bufio.NewScanner(r)
+		logLines   []parser.LogLine
+		lineNumber = 1
+		fileOffset = 0
+	)
 	for scanner.Scan() {
-		line := scanner.Text()
 		if err := scanner.Err(); err != nil {
-			log.Println("reading standard input:", err)
+			log.Println("scan:", err)
+		}
+		if re != nil && !re.Match(scanner.Bytes()) {
+			continue
 		}
 
-		logLine, err := pars(line)
+		logLine, err := pars(scanner.Bytes())
 		if err != nil {
 			log.Println("Failed to pars line:", err)
 		}
-		logLine.FileName = s
+		logLine.FileName = path
 		logLine.Offset = fileOffset
-		logLine.FS = src.Name
+		logLine.FS = node.Name
 		logLine.LineNumber = lineNumber
 
 		logLines = append(logLines, *logLine)
 
 		lineNumber += 1
-		fileOffset += len(line)
+		fileOffset += len(scanner.Bytes())
 
 		// if we read lines more than the defined batch size, send them to the client and continue
 		if len(logLines) > h.Config.ContentBatchSize {
-			ch <- &ContentResponse{
-				Metadata: Metadata{ID: r.ID, Action: r.Action},
-				Lines:    logLines,
-			}
+			ch <- &ResponseContent{Metadata: req.Metadata, Lines: logLines}
 			logLines = nil
 		}
 	}
@@ -216,8 +234,5 @@ func (h *handler) readContent(ch chan<- interface{}, r Request, src config.Src, 
 		return
 	}
 
-	ch <- &ContentResponse{
-		Metadata: Metadata{ID: r.ID, Action: r.Action},
-		Lines:    logLines,
-	}
+	ch <- &ResponseContent{Metadata: req.Metadata, Lines: logLines}
 }
