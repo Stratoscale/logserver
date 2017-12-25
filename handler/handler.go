@@ -1,0 +1,104 @@
+package handler
+
+import (
+	"log"
+	"net/http"
+
+	"github.com/gorilla/websocket"
+	"github.com/kr/fs"
+)
+
+type Config struct {
+	Nodes []Src
+}
+
+type Src struct {
+	Name string
+	FS   fs.FileSystem
+}
+
+func New(c Config) http.Handler {
+	return &handler{
+		Config: c,
+	}
+}
+
+type handler struct {
+	Config
+}
+
+type request struct {
+	ID       int    `json:"id"`
+	Action   string `json:"action"`
+	BasePath path   `json:"base_path"`
+}
+
+type path []string
+
+type fileType string
+
+const (
+	file fileType = "file"
+	dir  fileType = "dir"
+)
+
+type fsElement struct {
+	Path path     `json:"path"`
+	Type fileType `json:"type"`
+	Size int      `json:"size"`
+	FS   string   `json:"fs"`
+}
+
+type response struct {
+	ID int `json:"id"`
+}
+
+type fileTreeResponse struct {
+	response
+	Tree []fsElement `json:"tree"`
+}
+
+func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	u := new(websocket.Upgrader)
+	conn, err := u.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	for {
+		var r request
+		err := conn.ReadJSON(&r)
+		if err != nil {
+			log.Printf("read: %s", err)
+			return
+		}
+		go h.serve(conn, r)
+	}
+}
+
+type connWriter interface {
+	WriteJSON(interface{}) error
+}
+
+func (h *handler) serve(w connWriter, r request) {
+	switch r.Action {
+	case "get-file-tree":
+		_ = r.BasePath
+
+		// TODO: user basepath to get file system tree
+		w.WriteJSON(&fileTreeResponse{
+			response: response{ID: r.ID},
+			Tree: []fsElement{
+				{Path: []string{"var"}, Type: dir, FS: "node0"},
+				{Path: []string{"var"}, Type: dir, FS: "node1"},
+				{Path: []string{"var", "log"}, Type: dir, FS: "node0"},
+				{Path: []string{"var", "log"}, Type: dir, FS: "node1"},
+				{Path: []string{"var", "log", "mancala"}, Type: dir, FS: "node1"},
+				{Path: []string{"var", "log", "keystone.log"}, Type: file, Size: 10, FS: "node0"},
+				{Path: []string{"var", "log", "keystone.log"}, Type: file, Size: 15, FS: "node1"},
+				{Path: []string{"var", "log", "nova.log"}, Type: file, Size: 10},
+			},
+		})
+	}
+}
