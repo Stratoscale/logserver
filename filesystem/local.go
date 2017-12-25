@@ -20,16 +20,7 @@ func NewLocalFS(u *url.URL) (*LocalFS, error) {
 }
 
 func (f *LocalFS) ReadDir(dirname string) ([]os.FileInfo, error) {
-	files, err := ioutil.ReadDir(filepath.Join(f.Url.Path, dirname))
-	if !f.recurse {
-		b := files[:0]
-		for _, x := range files {
-			if !x.IsDir() {
-				b = append(b, x)
-			}
-		}
-	}
-	return files, err
+	return ioutil.ReadDir(filepath.Join(f.Url.Path, dirname))
 }
 
 func (f *LocalFS) Lstat(name string) (os.FileInfo, error) {

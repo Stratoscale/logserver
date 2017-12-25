@@ -30,7 +30,7 @@ func init() {
 }
 
 func main() {
-	h := handler.Config{
+	h := &handler.Config{
 		Re:   regexp.MustCompile(""),
 		Root: options.rootPath,
 	}
