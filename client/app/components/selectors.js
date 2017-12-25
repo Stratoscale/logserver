@@ -1,161 +1,23 @@
-import Consts from 'consts';
-import {createSelectorCreator, defaultMemoize} from 'reselect'
-import {entitySelector, entitiesSelector} from 'entities/entities-selectors';
-import {is} from 'immutable';
+import {List, Map} from 'immutable'
+import {createSelector} from 'reselect'
 
-export const alarmsSelector                   = entitiesSelector(Consts.ENTITIES.COLLECTION.ALARMS);
-export const alarmsDefinitionsSelector        = entitiesSelector(Consts.ENTITIES.COLLECTION.ALARMS_DEFINITIONS);
-export const appsInstancesSelector            = entitiesSelector(Consts.ENTITIES.MODEL.APP_INSTANCE);
-export const appsSelector                     = entitiesSelector(Consts.ENTITIES.MODEL.APP);
-export const appsSelectorS3                   = entitiesSelector(Consts.ENTITIES.MODEL.APP_S3);
-export const authSelector                     = entitiesSelector(Consts.ENTITIES.MODEL.AUTH).get('all');
-export const bankSelector                     = entitySelector(Consts.ENTITIES.COLLECTION.BANKS);
-export const banksSelector                    = entitiesSelector(Consts.ENTITIES.COLLECTION.BANKS);
-export const bankTestSelector                 = entitiesSelector(Consts.ENTITIES.MODEL.BANK_TEST);
-export const batchSelectors                   = entitiesSelector(Consts.ENTITIES.MODEL.BATCH);
-export const bondInterfacesSelector           = entitiesSelector(Consts.ENTITIES.MODEL.BOND_INTERFACE);
-export const bondSlavesSelector               = entitiesSelector(Consts.ENTITIES.MODEL.BOND_SLAVE);
-export const cassandraClustersSelector        = entitiesSelector(Consts.ENTITIES.COLLECTION.CASSANDRA);
-export const cassandraClusterSelector         = entitySelector(Consts.ENTITIES.MODEL.CASSANDRA);
-export const cassandraNodesSelector           = entitiesSelector(Consts.ENTITIES.MODEL.CASSANDRA_NODES);
-export const certificatesSelector             = entitiesSelector(Consts.ENTITIES.MODEL.CERTIFICATE);
-export const checkpointsSelector              = entitiesSelector(Consts.ENTITIES.MODEL.TARGET_CHECKPOINT);
-export const clusterStatisticsSelector        = entitiesSelector(Consts.ENTITIES.MODEL.CLUSTER_STATISTICS).get('all');
-export const clusterSummarySelector           = entitiesSelector(Consts.ENTITIES.MODEL.CLUSTER_SUMMARY);
-export const computeRulesSelector             = entitiesSelector(Consts.ENTITIES.COLLECTION.COMPUTE_RULES);
-export const conversionsSelector              = entitiesSelector(Consts.ENTITIES.COLLECTION.CONVERSIONS);
-export const credentialsSelector              = entitiesSelector(Consts.ENTITIES.COLLECTION.CREDENTIALS);
-export const dbsInstanceLogsSelector          = entitiesSelector(Consts.ENTITIES.MODEL.DBS_INSTANCE_LOGS);
-export const dbsInstanceLogSelector           = entitiesSelector(Consts.ENTITIES.MODEL.DBS_INSTANCE_LOG);
-export const defaultPoolSelector              = entitiesSelector(Consts.ENTITIES.MODEL.DEFAULT_POOL).get('null');
-export const definitionsSelector              = entitiesSelector(Consts.ENTITIES.COLLECTION.PROTECTION_DEFINITIONS);
-export const diskSelector                     = entitySelector(Consts.ENTITIES.MODEL.DISK);
-export const disksSelector                    = entitiesSelector(Consts.ENTITIES.MODEL.DISK);
-export const domainSelector                   = entitySelector(Consts.ENTITIES.COLLECTION.DOMAINS);
-export const domainsSelector                  = entitiesSelector(Consts.ENTITIES.COLLECTION.DOMAINS);
-export const domainLimitsSelector             = entitiesSelector(Consts.ENTITIES.COLLECTION.DOMAIN_LIMITS);
-export const domainLimitSelector              = entitySelector(Consts.ENTITIES.COLLECTION.DOMAIN_LIMITS);
-export const domainConfigSelector             = entitiesSelector(Consts.ENTITIES.COLLECTION.DOMAIN_CONFIG);
-export const engineRevisionsSelector          = entitiesSelector(Consts.ENTITIES.MODEL.ENGINE_REVISION);
-export const engineManagerEnginesSelector     = entitiesSelector(Consts.ENTITIES.MODEL.ENGINE);
-export const engineManagerVersionsSelector    = entitiesSelector(Consts.ENTITIES.MODEL.ENGINE_VERSION);
-export const engineManagerRevisionsSelector   = entitiesSelector(Consts.ENTITIES.MODEL.ENGINE_REVISION);
-export const ethernetInterfacesSelector       = entitiesSelector(Consts.ENTITIES.MODEL.ETHERNET_INTERFACE);
-export const eventsSelector                   = entitiesSelector(Consts.ENTITIES.COLLECTION.EVENTS);
-export const eventsEntitySelector             = entitySelector(Consts.ENTITIES.MODEL.EVENT_ENTITY);
-export const eventsSummarySelector            = entitiesSelector(Consts.ENTITIES.COLLECTION.EVENTS_SUMMARY);
-export const eventsDefinitionSelector         = entitiesSelector(Consts.ENTITIES.COLLECTION.EVENTS_DEFINITION);
-export const eventsQuerySelector              = entitiesSelector(Consts.ENTITIES.COLLECTION.EVENTS_QUERY);
-export const externalCredentialsSelector      = entitiesSelector(Consts.ENTITIES.MODEL.EXTERNAL_CREDENTIALS);
-export const externalPoolTypesSelector        = entitiesSelector(Consts.ENTITIES.COLLECTION.EXTERNAL_POOL_TYPES);
-export const externalPoolOptionsSelector      = entitiesSelector(Consts.ENTITIES.COLLECTION.EXTERNAL_POOL_TYPES_OPTIONS);
-export const floatingIPsSelector              = entitiesSelector(Consts.ENTITIES.COLLECTION.FLOATING_IPS);
-export const imagesSelector                   = entitiesSelector(Consts.ENTITIES.MODEL.IMAGES);
-export const instanceTypesSelector            = entitiesSelector(Consts.ENTITIES.MODEL.INSTANCE_TYPE);
-export const instanceTypeAccessListSelector   = entitiesSelector(Consts.ENTITIES.MODEL.INSTANCE_TYPE_ACCESS_LIST);
-export const ipv4InterfacesSelector           = entitiesSelector(Consts.ENTITIES.MODEL.IPV4_INTERFACE);
-export const kubernetesClusterSelector        = entitySelector(Consts.ENTITIES.MODEL.KUBERNETES_CLUSTER);
-export const kubernetesClustersSelector       = entitiesSelector(Consts.ENTITIES.MODEL.KUBERNETES_CLUSTER);
-export const kubernetesDeploymentsSelector    = entitiesSelector(Consts.ENTITIES.MODEL.KUBERNETES_DEPLOYMENT);
-export const kubernetesNodesSelector          = entitiesSelector(Consts.ENTITIES.MODEL.KUBERNETES_NODE);
-export const kubernetesPodsSelector           = entitiesSelector(Consts.ENTITIES.MODEL.KUBERNETES_POD);
-export const kubernetesReplicationsSelector   = entitiesSelector(Consts.ENTITIES.MODEL.KUBERNETES_REPLICATION);
-export const kubernetesServicesSelector       = entitiesSelector(Consts.ENTITIES.MODEL.KUBERNETES_SERVICE);
-export const kubernetesVersionsSelector       = entitiesSelector(Consts.ENTITIES.MODEL.KUBERNETES_VERSION);
-export const lbaasInstancesSelector           = entitiesSelector(Consts.ENTITIES.COLLECTION.LBAAS);
-export const lbaasInstanceSelector            = entitySelector(Consts.ENTITIES.MODEL.LBAAS);
-export const lbaasStatusSelector              = entitiesSelector(Consts.ENTITIES.MODEL.LBAAS_INIT_STATUS).get('image');
-export const lbaasTargetGroupSelector         = entitySelector(Consts.ENTITIES.MODEL.LBAAS_TARGET_GROUPS);
-export const lbaasTargetGroupsSelector        = entitiesSelector(Consts.ENTITIES.MODEL.LBAAS_TARGET_GROUPS);
-export const lbaasListenersSelector           = entitiesSelector(Consts.ENTITIES.COLLECTION.LBAAS_LISTENERS);
-export const lbaasTargetSelector              = entitiesSelector(Consts.ENTITIES.MODEL.LBAAS_TARGETS);
-export const lbaasTargetsSelector             = entitiesSelector(Consts.ENTITIES.MODEL.LBAAS_TARGETS);
-export const logicalNetworksSelector          = entitiesSelector(Consts.ENTITIES.MODEL.LOGICAL_NETWORK);
-export const logicalsubnetsSelector           = entitiesSelector(Consts.ENTITIES.MODEL.LOGICAL_SUBNET);
-export const mapreduceClustersSelector        = entitiesSelector(Consts.ENTITIES.MODEL.MAPREDUCE);
-export const mapreduceClusterSelector         = entitySelector(Consts.ENTITIES.MODEL.MAPREDUCE);
-export const mapreduceInstancesSelector       = entitiesSelector(Consts.ENTITIES.MODEL.MAPREDUCE_INSTANCES);
-export const maestroSelector                  = entitiesSelector(Consts.ENTITIES.MODEL.MAESTRO).get('services');
-export const metricSelector                   = entitySelector(Consts.ENTITIES.MODEL.METRIC);
-export const metricsSelector                  = entitiesSelector(Consts.ENTITIES.MODEL.METRIC);
-export const metricRangeSelector              = entitySelector(Consts.ENTITIES.MODEL.METRIC_RANGE);
-export const metricsTopSelector               = entitiesSelector(Consts.ENTITIES.MODEL.METRIC_TOP);
-export const networkingQuotaSelector          = entitySelector(Consts.ENTITIES.MODEL.NEUTRON_QUOTAS);
-export const networkSelector                  = entitySelector(Consts.ENTITIES.MODEL.NETWORK);
-export const networksSelector                 = entitiesSelector(Consts.ENTITIES.MODEL.NETWORK);
-export const networksAllocationSelector       = entitiesSelector(Consts.ENTITIES.MODEL.NETWORK_ALLOCATION);
-export const networksRoutesSelector           = entitiesSelector(Consts.ENTITIES.MODEL.NETWORKS_ROUTES);
-export const networksEc2ExternalSelector      = entitiesSelector(Consts.ENTITIES.COLLECTION.NETWORKS_EC2_EXTERNAL);
-export const networksEc2ProjectSelector       = entitiesSelector(Consts.ENTITIES.COLLECTION.NETWORKS_EC2_PROJECT);
-export const nodeHardwaresSelector            = entitiesSelector(Consts.ENTITIES.MODEL.NODE_HARDWARE);
-export const nodeSelector                     = entitySelector(Consts.ENTITIES.COLLECTION.NODES);
-export const nodesSelector                    = entitiesSelector(Consts.ENTITIES.COLLECTION.NODES);
-export const nfsEnginesSelector               = entitiesSelector(Consts.ENTITIES.MODEL.NFS_ENGINE);
-export const nfsFileSystemsSelector           = entitiesSelector(Consts.ENTITIES.MODEL.NFS_FILESYSTEM);
-export const nfsFileSystemSelector            = entitySelector(Consts.ENTITIES.MODEL.NFS_FILESYSTEM);
-export const nfsMountTargetsSelector          = entitiesSelector(Consts.ENTITIES.MODEL.NFS_MOUNT_TARGET);
-export const objectStoresSelector             = entitiesSelector(Consts.ENTITIES.MODEL.OBJECT_STORE);
-export const objectStoreSelector              = entitySelector(Consts.ENTITIES.MODEL.OBJECT_STORE);
-export const plansSelector                    = entitiesSelector(Consts.ENTITIES.MODEL.PLAN);
-export const poolSelector                     = entitySelector(Consts.ENTITIES.MODEL.POOL);
-export const poolsSelector                    = entitiesSelector(Consts.ENTITIES.MODEL.POOL);
-export const portsSelector                    = entitiesSelector(Consts.ENTITIES.MODEL.PORT);
-export const projectQuotaSelector             = entitiesSelector(Consts.ENTITIES.MODEL.PROJECT_QUOTAS);
-export const projectSelector                  = entitySelector(Consts.ENTITIES.MODEL.PROJECT);
-export const projectsSelector                 = entitiesSelector(Consts.ENTITIES.MODEL.PROJECT);
-export const protectionResourcesSelector      = entitiesSelector(Consts.ENTITIES.MODEL.PROTECTION_RESOURCE);
-export const protectionTasksSelector          = entitiesSelector(Consts.ENTITIES.COLLECTION.PROTECTION_TASKS);
-export const proxySettingsSelector            = entitiesSelector(Consts.ENTITIES.MODEL.PROXY_SETTINGS);
-export const providersSelector                = entitiesSelector(Consts.ENTITIES.MODEL.PROVIDER);
-export const providerAdaptersSelector         = entitiesSelector(Consts.ENTITIES.MODEL.PROVIDER_ADAPTERS);
-export const rdsInstanceSelector              = entitySelector(Consts.ENTITIES.MODEL.RDS_INSTANCES);
-export const rdsInstancesSelector             = entitiesSelector(Consts.ENTITIES.MODEL.RDS_INSTANCES);
-export const rdsParameterGroupSelector        = entitySelector(Consts.ENTITIES.MODEL.RDS_PARAMETER_GROUPS);
-export const rdsParameterGroupsSelector       = entitiesSelector(Consts.ENTITIES.MODEL.RDS_PARAMETER_GROUPS);
-export const rdsParametersSelector            = entitiesSelector(Consts.ENTITIES.MODEL.RDS_PARAMETERS);
-export const rdsSnapshotsSelector             = entitiesSelector(Consts.ENTITIES.MODEL.RDS_SNAPSHOTS);
-export const resourcesSelector                = entitiesSelector(Consts.ENTITIES.MODEL.TARGET_RESOURCE);
-export const roleAssignmentsSelector          = entitiesSelector(Consts.ENTITIES.MODEL.ROLE_ASSIGNMENTS).get('all');
-export const routerSelector                   = entitySelector(Consts.ENTITIES.MODEL.ROUTER);
-export const routersSelector                  = entitiesSelector(Consts.ENTITIES.MODEL.ROUTER);
-export const s3BucketsSelector                = entitiesSelector(Consts.ENTITIES.MODEL.S3_BUCKET);
-export const s3DefaultPoolSelector            = entitySelector(Consts.ENTITIES.MODEL.S3_DEFAULT_POOL);
-export const s3ObjectsSelector                = entitiesSelector(Consts.ENTITIES.MODEL.S3_OBJECT);
-export const s3ObjectsAclSelector             = entitiesSelector(Consts.ENTITIES.MODEL.S3_OBJECT_ACL);
-export const securityGroupSelector            = entitySelector(Consts.ENTITIES.MODEL.SECURITY_GROUP);
-export const securityGroupsSelector           = entitiesSelector(Consts.ENTITIES.COLLECTION.SECURITY_GROUPS);
-export const servicesSelector                 = entitiesSelector(Consts.ENTITIES.MODEL.SERVICE);
-export const serviceListSelector              = entitiesSelector(Consts.ENTITIES.MODEL.SERVICE_LIST);
-export const slaProfilesSelector              = entitiesSelector(Consts.ENTITIES.MODEL.SLA_PROFILE);
-export const snapshotsSelector                = entitiesSelector(Consts.ENTITIES.MODEL.SNAPSHOT);
-export const subnetsSelector                  = entitiesSelector(Consts.ENTITIES.MODEL.SUBNET);
-export const tagsSelector                     = entitiesSelector(Consts.ENTITIES.COLLECTION.TAGS);
-export const targetsSelector                  = entitiesSelector(Consts.ENTITIES.COLLECTION.TARGETS);
-export const trafficInterfacesSelector        = entitiesSelector(Consts.ENTITIES.MODEL.TRAFFIC_INTERFACE);
-export const trafficTypesSelector             = entitiesSelector(Consts.ENTITIES.MODEL.TRAFFIC_TYPE);
-export const triggersSelector                 = entitiesSelector(Consts.ENTITIES.COLLECTION.TRIGGERS);
-export const userProjectsSelector             = entitiesSelector(Consts.ENTITIES.MODEL.USER_PROJECT);
-export const userProjectSelector              = entitySelector(Consts.ENTITIES.MODEL.USER_PROJECT);
-export const userSelector                     = entitySelector(Consts.ENTITIES.COLLECTION.USERS);
-export const usersSelector                    = entitiesSelector(Consts.ENTITIES.COLLECTION.USERS);
-export const vipsSelector                     = entitiesSelector(Consts.ENTITIES.MODEL.VIRTUAL_IP);
-export const vlanInterfacesSelector           = entitiesSelector(Consts.ENTITIES.MODEL.VLAN_INTERFACE);
-export const vlanSelector                     = entitySelector(Consts.ENTITIES.MODEL.VLAN);
-export const vlansSelector                    = entitiesSelector(Consts.ENTITIES.MODEL.VLAN);
-export const vmSelector                       = entitySelector(Consts.ENTITIES.MODEL.VM);
-export const vmsNovaSelector                  = entitiesSelector(Consts.ENTITIES.MODEL.VM_NOVA);
-export const vmsSelector                      = entitiesSelector(Consts.ENTITIES.MODEL.VM);
-export const vncSelector                      = entitySelector(Consts.ENTITIES.MODEL.VNC);
-export const vnGroupSelector                  = entitiesSelector(Consts.ENTITIES.MODEL.VN_GROUP);
-export const vnTypeSelector                   = entitiesSelector(Consts.ENTITIES.MODEL.VN_TYPE).get('all');
-export const volumeSelector                   = entitySelector(Consts.ENTITIES.COLLECTION.VOLUMES);
-export const volumesSelector                  = entitiesSelector(Consts.ENTITIES.COLLECTION.VOLUMES);
-export const upgradesSelector                 = entitiesSelector(Consts.ENTITIES.MODEL.UPGRADE);
-export const upgradeSelector                  = entitySelector(Consts.ENTITIES.MODEL.UPGRADE);
-export const upgradeTasksSelector             = entitiesSelector(Consts.ENTITIES.MODEL.UPGRADE_TASK);
-export const upgradeGroupTasksSelector        = entitiesSelector(Consts.ENTITIES.MODEL.UPGRADE_GROUP_TASK);
-export const upgradeReleaseNotesSelector      = entitySelector(Consts.ENTITIES.MODEL.UPGRADE_RELEASE_NOTES);
+export const appStateSelector = (state, props) => state.get('app', Map())
 
-export const resolvedVmsSelector = entitiesSelector(`resolved-${Consts.ENTITIES.COLLECTION.VMS}`);
+export const isSocketReady = createSelector(
+  appStateSelector,
+  (app = Map()) => app.get('socket_ready', false)
+)
 
-export const createImmutableSelector = createSelectorCreator(defaultMemoize, is);
+export const currentPathSelector = createSelector(
+  appStateSelector,
+  (app = Map()) => app.get('current_path')
+)
+
+export const filesSelector = (state, props) => state.get('files', List())
+
+export const contentSelector = createSelector(
+  appStateSelector,
+  (app = Map()) => app.get('content')
+)
+
+export const locationSelect = (state = Map()) => state.get('router').location || {}

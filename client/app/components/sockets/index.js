@@ -1,9 +1,11 @@
 import {Component} from 'react'
 import {connect} from 'react-redux'
+import {setContent, setFiles, socketReady} from 'sockets/socket-actions'
+import {API_ACTIONS} from 'consts'
 
 let socket = null
 
-@connect()
+@connect(null, {socketReady, setFiles, setContent})
 export default class SocketContainer extends Component {
   constructor(props) {
     super(props)
@@ -14,21 +16,37 @@ export default class SocketContainer extends Component {
       socket = new WebSocket('ws://localhost:8080/ws')
 
       // Connection opened
-      socket.addEventListener('open', function (event) {
-        socket.send(JSON.stringify({
-          action: 'get-file-tree',
-        }))
+      socket.addEventListener('open', (event) => {
+        this.props.socketReady()
+        console.log('socket opened')
       })
 
       // Listen for messages
-      socket.addEventListener('message', function (event) {
-        console.log('Message from server ', event.data)
-      })
+      socket.addEventListener('message', (event) => {
+        const {meta, ...payload} = JSON.parse(event.data)
+        switch (meta.action) {
+          case API_ACTIONS.GET_FILE_TREE: {
+            this.props.setFiles(payload.tree)
+            break;
+          }
+          case API_ACTIONS.GET_CONTENT: {
+            this.props.setContent(payload.line)
+            break
+          }
+          default: {
+            console.warn('Unknown action returned from API', meta, payload)
+          }
+        }
 
+      })
     }
   }
 
   render = () => {
     return null
   }
+}
+
+export {
+  socket,
 }

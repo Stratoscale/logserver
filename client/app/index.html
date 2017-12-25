@@ -13,11 +13,7 @@
 <body>
 
     <div id="root"></div>
-    {% if (o.htmlWebpackPlugin.options.cluster_version) { %}
-    <script type="text/javascript">
-        window.__CLUSTER_VERSION__ = {%# o.htmlWebpackPlugin.options.cluster_version %};
-    </script>
-    {% } %}
+
     {% for (var chunk in o.htmlWebpackPlugin.files.chunks) { %}
     <script src="{%=o.htmlWebpackPlugin.files.chunks[chunk].entry %}"></script>
     {% } %}

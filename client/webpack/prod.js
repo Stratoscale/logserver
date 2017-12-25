@@ -68,7 +68,7 @@ module.exports = {
     new HtmlWebpackPlugin(_.extend({}, common.htmlWebpackPlugin, {
       hash:   true,
       minify: {},
-      chunks: ['loader'],
+      chunks: ['app'],
     })),
     new OptimizeCssAssetsPlugin(),
     new AssetsPlugin({
