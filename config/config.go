@@ -2,7 +2,6 @@ package config
 
 import (
 	"io"
-
 	"net/url"
 
 	"github.com/Stratoscale/logserver/filesystem"
@@ -23,15 +22,19 @@ type FileSystem interface {
 	Open(path string) (io.ReadCloser, error)
 }
 
-type SrcDesc struct {
-	Name    string
-	Address string
+type FileConfig struct {
+	Sources []SrcDesc `json:"source"`
 }
 
-func New(sources []SrcDesc) (*Config, error) {
+type SrcDesc struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
+}
+
+func New(fc FileConfig) (*Config, error) {
 	c := new(Config)
-	for _, srcDesc := range sources {
-		u, err := url.Parse(srcDesc.Address)
+	for _, srcDesc := range fc.Sources {
+		u, err := url.Parse(srcDesc.URL)
 		if err != nil {
 			return c, err
 		}
@@ -39,14 +42,15 @@ func New(sources []SrcDesc) (*Config, error) {
 		switch u.Scheme {
 		case "file":
 			fs, err = filesystem.NewLocalFS(u)
-		case "ssh":
-			// TODO
-			return c, nil
-			// fs, err = filesystem.NewSftp(u)
+		case "sftp":
+			fs, err = filesystem.NewSFTP(u)
 		case "http":
 			// TODO
 			// fs, err = filesystem.NewHttp(u)
 			return c, nil
+		}
+		if err != nil {
+			return nil, err
 		}
 		c.Nodes = append(c.Nodes, Src{srcDesc.Name, fs})
 	}

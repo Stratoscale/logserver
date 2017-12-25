@@ -1,10 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
+
+	"os"
 
 	"github.com/Stratoscale/logserver/config"
 	"github.com/Stratoscale/logserver/handler"
@@ -12,26 +15,35 @@ import (
 	"github.com/gorilla/mux"
 )
 
+const (
+	defaultConfig = "logserver.yml"
+	port          = 8888
+)
+
 var options struct {
-	port       int
-	configFile string
+	port     int
+	jsonFile string
 }
 
 func init() {
-	flag.IntVar(&options.port, "port", 8888, "Listen port")
-	flag.StringVar(&options.configFile, "config", "", "Path to a config file")
+	flag.IntVar(&options.port, "port", port, "Listen port")
+	flag.StringVar(&options.jsonFile, "json", defaultConfig, "Path to a config json file")
 }
 
 func main() {
-	c, err := config.New([]config.SrcDesc{
-		{Name: "src1", Address: "file://./example/log1"},
-		{Name: "src2", Address: "file://./example/log2"},
-	})
-	if err != nil {
-		panic(err)
-	}
 
-	ws := handler.New(*c)
+	f, err := os.Open(options.jsonFile)
+	failOnErr(err, fmt.Sprintf("open file %s", options.jsonFile))
+	defer f.Close()
+
+	var cf config.FileConfig
+	err = json.NewDecoder(f).Decode(&cf)
+	failOnErr(err, "decode file")
+
+	handlerConfig, err := config.New(cf)
+	failOnErr(err, "creating config")
+
+	ws := handler.New(*handlerConfig)
 	static := http.FileServer(packr.NewBox("./client/dist"))
 
 	r := mux.NewRouter()
@@ -43,4 +55,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func failOnErr(err error, msg string) {
+	if err == nil {
+		return
+	}
+
+	log.Fatalf("%s: %s", msg, err)
 }
