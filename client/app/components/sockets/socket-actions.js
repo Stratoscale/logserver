@@ -1,7 +1,22 @@
-import {setEntities} from 'entities/entities-actions';
+import {socket} from './index'
+import {ACTIONS} from 'consts'
 
-export function updateBatchEntry(entities, batchModel) {
+let messageId = 0
+
+export function socketReady() {
+  return {
+    type: ACTIONS.SOCKET_READY,
+  }
+}
+
+export function send(action) {
   return (dispatch, getState) => {
-    dispatch(setEntities(entities, batchModel.entity.getKey(), batchModel.entity.getIdAttribute(), {merge: true}));
+    socket.send(JSON.stringify({
+        meta: {
+          action,
+          id: messageId++,
+        },
+      })
+    )
   }
 }

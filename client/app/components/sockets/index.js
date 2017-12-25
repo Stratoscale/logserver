@@ -1,9 +1,10 @@
 import {Component} from 'react'
 import {connect} from 'react-redux'
+import {socketReady} from 'sockets/socket-actions'
 
 let socket = null
 
-@connect()
+@connect(null, {socketReady})
 export default class SocketContainer extends Component {
   constructor(props) {
     super(props)
@@ -14,14 +15,13 @@ export default class SocketContainer extends Component {
       socket = new WebSocket('ws://localhost:8080/ws')
 
       // Connection opened
-      socket.addEventListener('open', function (event) {
-        socket.send(JSON.stringify({
-          action: 'get-file-tree',
-        }))
+      socket.addEventListener('open', (event) => {
+        this.props.socketReady()
+        console.log('socket opened')
       })
 
       // Listen for messages
-      socket.addEventListener('message', function (event) {
+      socket.addEventListener('message', (event) => {
         console.log('Message from server ', event.data)
       })
 
@@ -31,4 +31,8 @@ export default class SocketContainer extends Component {
   render = () => {
     return null
   }
+}
+
+export {
+  socket,
 }
