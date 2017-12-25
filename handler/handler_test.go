@@ -1,21 +1,18 @@
 package handler
 
 import (
+	"io"
 	"net/http"
 	"testing"
 
-	"os"
-	"io"
 	"fmt"
+	"os"
 
 	"path/filepath"
 
-	"encoding/json"
-
-	"bytes"
-
 	"github.com/Stratoscale/logserver/config"
 	"github.com/posener/wstest"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -51,31 +48,40 @@ func TestHandler_ServeHTTP(t *testing.T) {
 	fmt.Print(resp)
 }
 
+type mockedReadClose struct {
+	io.ReadCloser
+	mock.Mock
+}
+
+type mockFileInfo struct {
+	os.FileInfo
+	mock.Mock
+}
+
+func (m mockFileInfo) IsDir() bool {
+	return false
+}
+
+func (m mockFileInfo) Size() int64 {
+	return 0
+}
+
 type vfs struct {
 }
 
+func (vfs) Open(path string) (io.ReadCloser, error) {
+	return new(mockedReadClose), nil
+}
+
 func (vfs) ReadDir(dirname string) ([]os.FileInfo, error) {
-	return nil, nil
+	var infos = []os.FileInfo{mockFileInfo{}}
+	return infos, nil
 }
 
 func (vfs) Lstat(name string) (os.FileInfo, error) {
-	return nil, nil
+	return mockFileInfo{}, nil
 }
 
 func (vfs) Join(elem ...string) string {
 	return filepath.Join(elem...)
-}
-
-func (f *vfs) Open(name string) (io.ReadCloser, error) {
-	return os.Open(filepath.Join("base", name))
-}
-
-
-func TestUnmarshal(t *testing.T) {
-	a := `{"meta":{"action":"get-file-tree","id":1},"base_path":["a"]}`
-	var r Request
-	err := json.NewDecoder(bytes.NewBufferString(a)).Decode(&r)
-	require.Nil(t, err)
-	t.Log(r)
-
 }
