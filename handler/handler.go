@@ -23,19 +23,12 @@ type Metadata struct {
 	Action string `json:"action"`
 }
 
-type request struct {
+type Request struct {
 	Metadata `json:"meta"`
-	BasePath path `json:"base_path"`
+	BasePath pathArr `json:"base_path"`
 }
 
-type path []string
-
-type fileType string
-
-const (
-	file fileType = "file"
-	dir  fileType = "dir"
-)
+type pathArr []string
 
 type debugLevel string
 
@@ -47,10 +40,10 @@ const (
 )
 
 type fsElement struct {
-	Path path     `json:"path"`
-	Type fileType `json:"type"`
-	Size int      `json:"size"`
-	FS   string   `json:"fs"`
+	Path  pathArr `json:"path"`
+	IsDir bool    `json:"is_dir"`
+	Size  int64   `json:"size"`
+	FS    string  `json:"fs"`
 }
 
 type fileTreeResponse struct {
@@ -63,8 +56,8 @@ type LogLine struct {
 	Level      debugLevel `json:"level"`
 	Time       string     `json:"time"`
 	FS         string     `json:"fs"`
-	FileName   string     `json:"file-name"`
-	LineNumber int        `json:"line-number"`
+	FileName   string     `json:"file_name"`
+	LineNumber int        `json:"line_number"`
 	Offset     int        `json:"offset"`
 }
 
@@ -74,7 +67,7 @@ type contentResponse struct {
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Got ws request from: %s", r.RemoteAddr)
+	log.Printf("Got ws Request from: %s", r.RemoteAddr)
 	u := new(websocket.Upgrader)
 	conn, err := u.Upgrade(w, r, nil)
 	if err != nil {
@@ -84,8 +77,8 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Request upgraded to: %s", r.RemoteAddr)
 
 	for {
-		var r request
-		err := conn.ReadJSON(&r)
+		var r Request
+		err = conn.ReadJSON(&r)
 		if err != nil {
 			log.Printf("read: %s", err)
 			return
@@ -98,27 +91,67 @@ type connWriter interface {
 	WriteJSON(interface{}) error
 }
 
-func (h *handler) serve(w connWriter, r request) {
+func (h *handler) serve(w connWriter, r Request) {
 	switch r.Action {
 	case "get-file-tree":
 		_ = r.BasePath
+		//var fsElements []fsElement
+		//for _, node := range h.Nodes {
+		//	walker := fs.WalkFS(filepath.Join(r.BasePath...), node.FS)
+		//	for walker.Step() {
+		//		if err := walker.Err(); err != nil {
+		//			log.Println(err)
+		//			continue
+		//		}
+		//
+		//		fsElements = append(fsElements, fsElement{
+		//			Path:  filepath.SplitList(walker.Path()),
+		//			IsDir: walker.Stat().IsDir(),
+		//			Size:  walker.Stat().Size(),
+		//			FS:    node.Name,
+		//		})
+		//	}
+		//}
+		//// reply
+		//w.WriteJSON(&fileTreeResponse{
+		//	Metadata: Metadata{ID: r.ID, Action: r.Action},
+		//	Tree:     fsElements,
+		//})
 
 		// TODO: user basepath to get file system tree
 		w.WriteJSON(&fileTreeResponse{
 			Metadata: Metadata{ID: r.ID, Action: r.Action},
 			Tree: []fsElement{
-				{Path: []string{"var"}, Type: dir, FS: "node0"},
-				{Path: []string{"var"}, Type: dir, FS: "node1"},
-				{Path: []string{"var", "log"}, Type: dir, FS: "node0"},
-				{Path: []string{"var", "log"}, Type: dir, FS: "node1"},
-				{Path: []string{"var", "log", "mancala"}, Type: dir, FS: "node1"},
-				{Path: []string{"var", "log", "keystone.log"}, Type: file, Size: 10, FS: "node0"},
-				{Path: []string{"var", "log", "keystone.log"}, Type: file, Size: 15, FS: "node1"},
-				{Path: []string{"var", "log", "nova.log"}, Type: file, Size: 10},
+				{Path: []string{"var"}, IsDir: true, FS: "node0"},
+				{Path: []string{"var"}, IsDir: true, FS: "node1"},
+				{Path: []string{"var", "log"}, IsDir: true, FS: "node0"},
+				{Path: []string{"var", "log"}, IsDir: true, FS: "node1"},
+				{Path: []string{"var", "log", "mancala"}, IsDir: true, FS: "node1"},
+				{Path: []string{"var", "log", "keystone.log"}, IsDir: false, Size: 10, FS: "node0"},
+				{Path: []string{"var", "log", "keystone.log"}, IsDir: false, Size: 15, FS: "node1"},
+				{Path: []string{"var", "log", "nova.log"}, IsDir: false, Size: 10},
 			},
 		})
 	case "get-content":
 		_ = r.BasePath
+		//var logLines []LogLine
+		//for _, node := range h.Nodes {
+		//	walker := fs.WalkFS(filepath.Join(r.BasePath...), node.FS)
+		//	for walker.Step() {
+		//		if err := walker.Err(); err != nil {
+		//			log.Println(err)
+		//			continue
+		//		}
+		//
+		//		logLines = append(LogLine, fsElement{
+		//			Path:  filepath.SplitList(walker.Path()),
+		//			IsDir: walker.Stat().IsDir(),
+		//			Size:  walker.Stat().Size(),
+		//			FS:    node.Name,
+		//		})
+		//	}
+		//}
+
 		// TODO: user basepath to get file system tree
 		w.WriteJSON(&contentResponse{
 			Metadata: Metadata{ID: r.ID, Action: r.Action},
