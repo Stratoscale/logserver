@@ -50,12 +50,14 @@ type fileTreeResponse struct {
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Got ws request from: %s", r.RemoteAddr)
 	u := new(websocket.Upgrader)
 	conn, err := u.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 		return
 	}
+	log.Printf("Request upgraded to: %s", r.RemoteAddr)
 
 	for {
 		var r request
