@@ -31,21 +31,21 @@ type SrcDesc struct {
 func New(sources []SrcDesc) (*Config, error) {
 	c := new(Config)
 	for _, srcDesc := range sources {
-		fsContext, err := url.Parse(srcDesc.Address)
+		u, err := url.Parse(srcDesc.Address)
 		if err != nil {
 			return c, err
 		}
 		var fs FileSystem
-		switch fsContext.Scheme {
+		switch u.Scheme {
 		case "file":
-			fs = &filesystem.LocalFS{BaseFS: filesystem.BaseFS{fsContext}}
+			fs, err = filesystem.NewLocalFS(u)
 		case "ssh":
 			// TODO
 			return c, nil
-			// fs, err = filesystem.NewSftp(fsContext)
+			// fs, err = filesystem.NewSftp(u)
 		case "http":
 			// TODO
-			// fs, err = filesystem.NewHttp(fsContext)
+			// fs, err = filesystem.NewHttp(u)
 			return c, nil
 		}
 		c.Nodes = append(c.Nodes, Src{srcDesc.Name, fs})
