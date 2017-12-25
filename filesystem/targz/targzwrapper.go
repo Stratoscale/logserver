@@ -1,50 +1,50 @@
-package tarfswrap
+package targz
 
 import (
-    "io"
-    "os"
+	"io"
+	"os"
 
-    "strings"
+	"strings"
 
-    "github.com/Stratoscale/logserver/config"
-    "github.com/posener/tarfs"
+	"github.com/Stratoscale/logserver/config"
 )
 
 const suffix = ".tar.gz"
 
 func New(inner config.FileSystem) config.FileSystem {
-    return &wrap{inner: inner}
+	return &wrap{inner: inner}
 }
 
 type wrap struct {
-    inner config.FileSystem
+	inner config.FileSystem
 }
 
 func (w *wrap) ReadDir(dirname string) ([]os.FileInfo, error) {
-    if !strings.Contains(dirname, suffix) {
-        return w.inner.ReadDir(dirname)
-    }
-    tarName, innerPath := split(dirname)
-    f, err := w.inner.Open(tarName)
-    defer f.Close()
-    if err != nil {
-        return nil, err
-    }
-    tfs, err := tarfs.New(f)
-    if err != nil {
-        return nil, err
-    }
-    return tfs.ReadDir(innerPath)
+	if !strings.Contains(dirname, suffix) {
+		return w.inner.ReadDir(dirname)
+	}
+	//tarName, innerPath := split(dirname)
+	//f, err := w.inner.Open(tarName)
+	//defer f.Close()
+	//if err != nil {
+	//	return nil, err
+	//}
+	//tfs, err := tarfs.New(f)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//return tfs.ReadDir(innerPath)
+	return nil, nil
 }
 
 func (w *wrap) Lstat(name string) (os.FileInfo, error) {
-    panic("implement me")
+	panic("implement me")
 }
 
 func (w *wrap) Join(elem ...string) string {
-    panic("implement me")
+	panic("implement me")
 }
 
 func (w *wrap) Open(path string) (io.ReadCloser, error) {
-    panic("implement me")
+	panic("implement me")
 }

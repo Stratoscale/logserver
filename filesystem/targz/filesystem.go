@@ -1,7 +1,9 @@
-package tarfs
+package targz
 
 import (
 	"archive/tar"
+	"compress/gzip"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -9,46 +11,41 @@ import (
 	"strings"
 )
 
-// NewFS returns a new tar FileSystem object from path to a tar archive.
-// The returned object implements the FileSystem interface in https://godoc.org/github.com/kr/fs#FileSystem.
-// It can be used by the fs.WalkFS function.
-// It also enables reading of a specific fakeFile.
-func NewFS(path string) (*FileSystem, error) {
-	fs := &FileSystem{}
+func NewFS(r io.ReadCloser) (*FileSystem, error) {
+	var tarReader *tar.Reader
 
-	f, err := NewFile(path)
-	if err != nil {
-		return nil, err
+	if z, err := gzip.NewReader(r); err == nil {
+		tarReader = tar.NewReader(z)
+	} else {
+		tarReader = tar.NewReader(r)
 	}
-	defer f.Close()
-
-	fs.createIndex(f.Reader)
-
-	return fs, nil
+	return &FileSystem{
+		Reader: tarReader,
+		Closer: r,
+	}, nil
 }
 
-// FileSystem is a struct that describes a tar filesystem.
-// It should be created with the NewFile function.
 type FileSystem struct {
-	index *node
+	Reader *tar.Reader
+	Closer io.Closer
 }
 
 // ReadDir implements the FileSystem ReadDir method,
 // It returns a list of fileinfos in a given path
 func (f *FileSystem) ReadDir(dirname string) ([]os.FileInfo, error) {
-	cursor, err := f.findNode(dirname)
-	if err != nil {
-		return nil, err
-	}
-	if !cursor.IsDir() {
-		return nil, os.ErrInvalid
-	}
-
-	content := make([]os.FileInfo, len(cursor.next))
-	i := 0
-	for _, f := range cursor.next {
-		content[i] = f
-		i++
+	var content []os.FileInfo
+	for {
+		h, err := f.Reader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		if !isInDir(dirname, h.Name) {
+			continue
+		}
+		content = append(content, h.FileInfo())
 	}
 	sort.Slice(content, func(i, j int) bool { return content[i].Name() < content[j].Name() })
 	return content, nil
@@ -57,11 +54,20 @@ func (f *FileSystem) ReadDir(dirname string) ([]os.FileInfo, error) {
 // Lstat implements the FileSystem Lstat method,
 // it returns fileinfo for a given path
 func (f *FileSystem) Lstat(name string) (os.FileInfo, error) {
-	cursor, err := f.findNode(name)
-	if err != nil {
-		return nil, err
+	for {
+		h, err := f.Reader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		if h.Name != name {
+			continue
+		}
+		return h.FileInfo(), nil
 	}
-	return cursor, nil
+	return nil, fmt.Errorf("not found: %s", name)
 }
 
 // Join implements the FileSystem Join method,
@@ -70,87 +76,27 @@ func (f *FileSystem) Join(elem ...string) string {
 }
 
 // Join implements the FileSystem Join method,
-func (f *FileSystem) Open(elem ...string) string {
-	return filepath.Join(elem...)
+func (f *FileSystem) Open(name string) (io.ReadCloser, error) {
+	_, err := f.Lstat(name)
+	if err != nil {
+		return nil, err
+	}
+	return &readCloser{Reader: f.Reader, Closer: f.Closer}, nil
 }
 
-func getArchivedFile(t *tar.Reader, filepath string) (os.FileInfo, error) {
-
-	for {
-		h, err := t.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
-		}
-
-		if h.Name != filepath {
-			continue
-		}
-		return h.FileInfo()
-
-	}
+type readCloser struct {
+	io.Reader
+	io.Closer
 }
 
-
-
-func (f *FileSystem) createIndex(t *tar.Reader) error {
-	f.index = newFakeDirNode("/")
-
-	for {
-		h, err := t.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
-		}
-
-		parts := splitPath(h.Name)
-
-		cursor := f.index
-		for _, part := range parts[:len(parts)-1] {
-			_, ok := cursor.next[part]
-			if !ok {
-				cursor.next[part] = newFakeDirNode(part)
-			}
-			cursor = cursor.next[part]
-		}
-
-		cursor.next[parts[len(parts)-1]] = newNode(h.FileInfo())
+func isInDir(dirname, name string) bool {
+	if !strings.HasPrefix(name, dirname) {
+		return false
 	}
-	return cursor
-}
-
-func (f *FileSystem) findNode(path string) (*node, error) {
-	var (
-		parts  = splitPath(path)
-		cursor = f.index
-		ok     bool
-	)
-
-	for _, part := range parts {
-		cursor, ok = cursor.next[part]
-		if !ok {
-			return nil, os.ErrNotExist
-		}
+	after := name[len(dirname):]
+	if strings.Contains(strings.Trim(after, string(os.PathSeparator)), string(os.PathListSeparator)) {
+		return false
 	}
+	return true
 
-	return cursor, nil
-}
-
-// splitPath splits a FileSystem path to directories and ending fakeFile/directory along it's path.
-func splitPath(path string) []string {
-	parts := strings.Split(strings.Trim(filepath.Clean(path), "/"), "/")
-	ret := make([]string, 0, len(parts))
-	for _, part := range parts {
-		switch part {
-		case "", ".":
-			// skip empty or current directory
-		default:
-			ret = append(ret, part)
-		}
-	}
-	return ret
 }
