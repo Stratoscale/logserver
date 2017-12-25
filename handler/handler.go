@@ -7,6 +7,8 @@ import (
 
 	"bufio"
 
+	"sync"
+
 	"github.com/Stratoscale/logserver/config"
 	"github.com/Stratoscale/logserver/parser"
 	"github.com/gorilla/websocket"
@@ -66,7 +68,9 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go reader(conn)
+	ch := make(chan interface{})
+
+	go reader(conn, ch)
 
 	for {
 		var r Request
@@ -75,19 +79,18 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			log.Printf("read: %s", err)
 			return
 		}
-		go h.serve(conn, r)
+		go h.serve(ch, r)
 	}
 }
 
-func reader(conn *websocket.Conn) {
-
+func reader(conn *websocket.Conn, ch <-chan interface{}) {
+	for req := range ch {
+		conn.WriteJSON(req)
+	}
 }
 
-type connWriter interface {
-	WriteJSON(interface{}) error
-}
-
-func (h *handler) serve(w connWriter, r Request) {
+func (h *handler) serve(ch chan<- interface{}, r Request) {
+	defer close(ch)
 	path := filepath.Join(r.Path...)
 	if path == "" {
 		path = "/"
@@ -124,12 +127,13 @@ func (h *handler) serve(w connWriter, r Request) {
 			}
 		}
 		// reply
-		w.WriteJSON(&ResponseFileTree{
+		ch <- &ResponseFileTree{
 			Metadata: Metadata{ID: r.ID, Action: r.Action},
 			Tree:     fsElements,
-		})
+		}
 
 	case "get-content":
+		wg := sync.WaitGroup{}
 		for _, node := range h.Nodes {
 			stat, err := node.FS.Lstat(path)
 			if err != nil {
@@ -140,13 +144,18 @@ func (h *handler) serve(w connWriter, r Request) {
 			if stat.IsDir() {
 				continue
 			}
-			go h.readContent(w, r, node, path)
+			wg.Add(1)
+			go func() {
+				h.readContent(ch, r, node, path)
+				wg.Done()
+			}()
 		}
+		wg.Wait()
 
 	case "search":
 		_ = r.Path
 		// TODO: user basepath to get file system tree
-		w.WriteJSON(&ContentResponse{
+		ch <- &ContentResponse{
 			Metadata: Metadata{ID: r.ID, Action: r.Action},
 			Lines: []parser.LogLine{
 				{Msg: "bla bla bla", Level: "debug", FS: "node0", FileName: "bla.log", LineNumber: 1},
@@ -155,11 +164,11 @@ func (h *handler) serve(w connWriter, r Request) {
 				{Msg: "harta barta", Level: "debug", FS: "node2", FileName: "harta.log", LineNumber: 7},
 				{Msg: "panic error!", Level: "debug", FS: "node2", FileName: "harta.log", LineNumber: 7},
 			},
-		})
+		}
 	}
 }
 
-func (h *handler) readContent(writer connWriter, r Request, src config.Src, s string) {
+func (h *handler) readContent(ch chan<- interface{}, r Request, src config.Src, s string) {
 	rc, err := src.FS.Open(s)
 	if err != nil {
 		log.Printf("Open file %s: %s", s, err)
@@ -201,8 +210,8 @@ func (h *handler) readContent(writer connWriter, r Request, src config.Src, s st
 		return
 	}
 
-	writer.WriteJSON(&ContentResponse{
+	ch <- &ContentResponse{
 		Metadata: Metadata{ID: r.ID, Action: r.Action},
 		Lines:    logLines,
-	})
+	}
 }
