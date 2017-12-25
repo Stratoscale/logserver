@@ -1,12 +1,10 @@
 package handler
 
 import (
+	"bufio"
 	"log"
 	"net/http"
 	"path/filepath"
-
-	"bufio"
-
 	"sync"
 
 	"github.com/Stratoscale/logserver/config"
@@ -69,7 +67,6 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ch := make(chan interface{})
-
 	go reader(conn, ch)
 
 	for {
@@ -85,7 +82,10 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func reader(conn *websocket.Conn, ch <-chan interface{}) {
 	for req := range ch {
-		conn.WriteJSON(req)
+		err := conn.WriteJSON(req)
+		if err != nil {
+			log.Printf("write: %s", err)
+		}
 	}
 }
 
@@ -145,10 +145,10 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 				continue
 			}
 			wg.Add(1)
-			go func() {
+			go func(node config.Src) {
+				defer wg.Done()
 				h.readContent(ch, r, node, path)
-				wg.Done()
-			}()
+			}(node)
 		}
 		wg.Wait()
 

@@ -16,7 +16,7 @@ import (
 	"github.com/test-go/testify/require"
 )
 
-func TestWS(t *testing.T) {
+func TestWS_GetFileTree(t *testing.T) {
 	require := require.New(t)
 	cwd, err := os.Getwd()
 	require.Nil(err)
@@ -73,9 +73,9 @@ func TestWS_GetContentStratolog(t *testing.T) {
 	expResp := handler.ContentResponse{
 		Metadata: handler.Metadata{ID: 9, Action: "get-content"},
 		Lines: []parser.LogLine{
-			parser.LogLine{Msg: "data disk %s was found in distributionID:%s table version:%s, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "mancala.stratolog", LineNumber: 1, Offset: 0},
-			parser.LogLine{Msg: "data disk %s was found in distributionID:%s table version:%s, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "mancala.stratolog", LineNumber: 2, Offset: 699},
-			parser.LogLine{Msg: "data disk %s was found in distributionID:%s table version:%s, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "mancala.stratolog", LineNumber: 3, Offset: 1398},
+			{Msg: "data disk %s was found in distributionID:%s table version:%s, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "mancala.stratolog", LineNumber: 1, Offset: 0},
+			{Msg: "data disk %s was found in distributionID:%s table version:%s, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "mancala.stratolog", LineNumber: 2, Offset: 699},
+			{Msg: "data disk %s was found in distributionID:%s table version:%s, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "mancala.stratolog", LineNumber: 3, Offset: 1398},
 		},
 	}
 	log.Print(resp)
