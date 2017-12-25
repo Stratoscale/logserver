@@ -1,10 +1,10 @@
 import {Component} from 'react'
 import {connect} from 'react-redux'
-import {socketReady} from 'sockets/socket-actions'
+import {setFiles, socketReady} from 'sockets/socket-actions'
 
 let socket = null
 
-@connect(null, {socketReady})
+@connect(null, {socketReady, setFiles})
 export default class SocketContainer extends Component {
   constructor(props) {
     super(props)
@@ -22,9 +22,9 @@ export default class SocketContainer extends Component {
 
       // Listen for messages
       socket.addEventListener('message', (event) => {
-        console.log('Message from server ', event.data)
+        const {tree} = JSON.parse(event.data)
+        this.props.setFiles(tree)
       })
-
     }
   }
 

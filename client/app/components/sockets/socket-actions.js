@@ -9,6 +9,13 @@ export function socketReady() {
   }
 }
 
+export function setFiles(files) {
+  return {
+    type:    ACTIONS.SET_FILES,
+    payload: files,
+  }
+}
+
 export function send(action, data) {
   return (dispatch, getState) => {
     socket.send(JSON.stringify({

@@ -1,11 +1,16 @@
 import React, {Component} from 'react'
-import {List} from 'antd'
+import {Map} from 'immutable'
+import {List, Icon} from 'antd'
 import {withLoader} from 'utils'
 import {send} from 'sockets/socket-actions'
 import {connect} from 'react-redux'
 import {API_ACTIONS} from 'consts'
 import {createStructuredSelector} from 'reselect'
 import {filesSelector} from 'selectors'
+
+const File = ({path, isDir}) => {
+  return <List.Item className="file"><Icon type={isDir ? 'folder' : 'file'}/> {path.join('/')}</List.Item>
+}
 
 @connect(createStructuredSelector({
   files: filesSelector,
@@ -21,11 +26,10 @@ class FileTree extends Component {
 
   render() {
     const {files} = this.props
-
     return (
       <List
-        dataSource={files.toJS()}
-        renderItem={item => <List.Item>{item.name}</List.Item>}
+        dataSource={files.get('files', Map()).valueSeq().toJS()}
+        renderItem={File}
       />
     )
   }
