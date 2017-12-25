@@ -1,0 +1,5 @@
+sources:
+  - name: local
+    address: file:///val/log
+  - name: node2
+    address: http://node2:3001/logs/var/log
