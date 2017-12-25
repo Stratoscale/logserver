@@ -1,7 +1,7 @@
 import {socket} from './index'
 import {ACTIONS} from 'consts'
 
-let messageId = 0
+let messageId = 1
 
 export function socketReady() {
   return {
@@ -9,14 +9,14 @@ export function socketReady() {
   }
 }
 
-export function send(action) {
+export function send(action, data) {
   return (dispatch, getState) => {
     socket.send(JSON.stringify({
-        meta:      {
+        meta: {
           action,
           id: messageId++,
         },
-        base_path: [],
+        ...data,
       })
     )
   }

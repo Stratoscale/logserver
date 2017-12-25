@@ -1,7 +1,7 @@
 import React, {Component} from 'react'
 import {Layout, Menu, Breadcrumb} from 'antd'
 import SocketContainer from 'sockets'
-import FolderTree from 'folder-tree'
+import FileTree from 'file-tree'
 import {Route, Switch} from 'react-router'
 
 const {Header, Content, Footer} = Layout
@@ -9,30 +9,18 @@ const {Header, Content, Footer} = Layout
 class Home extends Component {
   render() {
     return (
-      <Layout className="layout">
+      <Layout className="layout home">
         <SocketContainer/>
         <Header>
-          <div className="logo"/>
-          <Menu
-            theme="dark"
-            mode="horizontal"
-            defaultSelectedKeys={['2']}
-            style={{lineHeight: '64px'}}
-          >
-            <Menu.Item key="1">nav 1</Menu.Item>
-            <Menu.Item key="2">nav 2</Menu.Item>
-            <Menu.Item key="3">nav 3</Menu.Item>
-          </Menu>
+          <div className="logo">Log Server/Streamer/Viewer</div>
         </Header>
         <Content style={{padding: '0 50px'}}>
           <Breadcrumb style={{margin: '16px 0'}}>
-            <Breadcrumb.Item>Home</Breadcrumb.Item>
-            <Breadcrumb.Item>List</Breadcrumb.Item>
-            <Breadcrumb.Item>App</Breadcrumb.Item>
+            <Breadcrumb.Item>Files</Breadcrumb.Item>
           </Breadcrumb>
           <div style={{background: '#fff', padding: 24, minHeight: 280}}>
             <Switch>
-              <Route path="/" component={FolderTree}/>
+              <Route path="/" component={FileTree}/>
             </Switch>
           </div>
         </Content>

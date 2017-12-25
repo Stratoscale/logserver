@@ -4,7 +4,7 @@
   "author": "Nameless Stratonaut",
   "private": true,
   "dependencies": {
-    "antd": "^2.12.5",
+    "antd": "^3.0.3",
     "classnames": "^2.2.0",
     "create-stylesheet": "git+https://github.com/max-stratoscale/create-stylesheet.git",
     "css-toggle-switch": "^4.1.0",
