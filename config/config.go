@@ -8,8 +8,17 @@ import (
 	"github.com/kr/fs"
 )
 
+const (
+	defaultContentBatchSize = 20
+)
+
 type Config struct {
+	GlobalConfig
 	Nodes []Src
+}
+
+type GlobalConfig struct {
+	ContentBatchSize int `json:"content_batch_size"`
 }
 
 type Src struct {
@@ -23,7 +32,8 @@ type FileSystem interface {
 }
 
 type FileConfig struct {
-	Sources []SrcDesc `json:"source"`
+	Global  GlobalConfig `json:"global"`
+	Sources []SrcDesc    `json:"source"`
 }
 
 type SrcDesc struct {
@@ -53,6 +63,11 @@ func New(fc FileConfig) (*Config, error) {
 			return nil, err
 		}
 		c.Nodes = append(c.Nodes, Src{srcDesc.Name, fs})
+	}
+	c.GlobalConfig = fc.Global
+
+	if c.GlobalConfig.ContentBatchSize == 0 {
+		c.GlobalConfig.ContentBatchSize = defaultContentBatchSize
 	}
 	return c, nil
 }

@@ -176,10 +176,7 @@ func (h *handler) readContent(ch chan<- interface{}, r Request, src config.Src, 
 	}
 	defer rc.Close()
 
-	suffix := filepath.Ext(s)
-
-	pars := parser.GetParser(suffix)
-
+	pars := parser.GetParser(filepath.Ext(s))
 	scanner := bufio.NewScanner(rc)
 
 	var logLines []parser.LogLine
@@ -204,6 +201,15 @@ func (h *handler) readContent(ch chan<- interface{}, r Request, src config.Src, 
 
 		lineNumber += 1
 		fileOffset += len(line)
+
+		// if we read lines more than the defined batch size, send them to the client and continue
+		if len(logLines) > h.Config.ContentBatchSize {
+			ch <- &ContentResponse{
+				Metadata: Metadata{ID: r.ID, Action: r.Action},
+				Lines:    logLines,
+			}
+			logLines = nil
+		}
 	}
 	if err := scanner.Err(); err != nil {
 		log.Println("Reading standard input:", err)
