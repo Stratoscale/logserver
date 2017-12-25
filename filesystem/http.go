@@ -19,5 +19,5 @@ func (f *HttpFS) Lstat(name string) (os.FileInfo, error) {
 }
 
 func (f *HttpFS) Join(elem ...string) string {
-	return filepath.Join(f.Url.Path, filepath.Join(elem...))
+	return filepath.Join(elem...)
 }

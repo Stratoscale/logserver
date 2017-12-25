@@ -40,7 +40,7 @@ func TestHandler_ServeHTTP(t *testing.T) {
 	err = c.WriteMessage(1, []byte(`{"meta":{"action":"get-file-tree","id":1},"base_path":["a"]}`))
 	require.Nil(t, err)
 
-	resp := fileTreeResponse{}
+	resp := ResponseFileTree{}
 
 	err = c.ReadJSON(&resp)
 	require.Nil(t, err)
