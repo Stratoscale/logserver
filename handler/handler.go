@@ -8,6 +8,7 @@ import (
 	"bufio"
 
 	"github.com/Stratoscale/logserver/config"
+	"github.com/Stratoscale/logserver/parser"
 	"github.com/gorilla/websocket"
 	"github.com/kr/fs"
 )
@@ -34,15 +35,6 @@ type Request struct {
 
 type pathArr []string
 
-type debugLevel string
-
-const (
-	levelDebug   debugLevel = "debug"
-	levelInfo    debugLevel = "info"
-	levelError   debugLevel = "error"
-	levelWarning debugLevel = "warning"
-)
-
 type fsElement struct {
 	Key       string         `json:"key"`
 	Path      pathArr        `json:"path"`
@@ -60,19 +52,9 @@ type fileTreeResponse struct {
 	Tree     []fsElement `json:"tree"`
 }
 
-type LogLine struct {
-	Msg        string     `json:"msg"`
-	Level      debugLevel `json:"level"`
-	Time       string     `json:"time"`
-	FS         string     `json:"fs"`
-	FileName   string     `json:"file_name"`
-	LineNumber int        `json:"line_number"`
-	Offset     int        `json:"offset"`
-}
-
 type contentResponse struct {
 	Metadata `json:"meta"`
-	Lines    []LogLine `json:"line"`
+	Lines    []parser.LogLine `json:"line"`
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -157,12 +139,12 @@ func (h *handler) serve(w connWriter, r Request) {
 		// TODO: user basepath to get file system tree
 		w.WriteJSON(&contentResponse{
 			Metadata: Metadata{ID: r.ID, Action: r.Action},
-			Lines: []LogLine{
-				{Msg: "bla bla bla", Level: levelDebug, FS: "node0", FileName: "bla.log", LineNumber: 1},
-				{Msg: "bla bla", Level: levelDebug, FS: "node1", FileName: "bla.log", LineNumber: 100},
-				{Msg: "harta barta", Level: levelWarning, FS: "node1", FileName: "harta.log", LineNumber: 1},
-				{Msg: "harta barta", Level: levelInfo, FS: "node2", FileName: "harta.log", LineNumber: 7},
-				{Msg: "panic error!", Level: levelError, FS: "node2", FileName: "harta.log", LineNumber: 7},
+			Lines: []parser.LogLine{
+				{Msg: "bla bla bla", Level: "debug", FS: "node0", FileName: "bla.log", LineNumber: 1},
+				{Msg: "bla bla", Level: "debug", FS: "node1", FileName: "bla.log", LineNumber: 100},
+				{Msg: "harta barta", Level: "debug", FS: "node1", FileName: "harta.log", LineNumber: 1},
+				{Msg: "harta barta", Level: "debug", FS: "node2", FileName: "harta.log", LineNumber: 7},
+				{Msg: "panic error!", Level: "debug", FS: "node2", FileName: "harta.log", LineNumber: 7},
 			},
 		})
 	}
@@ -176,30 +158,36 @@ func (h *handler) readContent(writer connWriter, r Request, src config.Src, s st
 	}
 	defer rc.Close()
 
+	suffix := filepath.Ext(s)
+
+	pars := parser.GetParser(suffix)
+
 	// TODO: use specific parser by file suffix to populate logLine
 	scanner := bufio.NewScanner(rc)
 
-	var logLines []LogLine
+	var logLines []parser.LogLine
 	for scanner.Scan() {
 		lineNumber := 1
 		fileOffset := 0
 		for scanner.Scan() {
-			msg := scanner.Text()
+			line := scanner.Text()
 			if err := scanner.Err(); err != nil {
 				log.Println("reading standard input:", err)
 			}
-			logLines = append(logLines, LogLine{
-				FS:         src.Name,
-				FileName:   s,
-				Level:      levelInfo, // TODO: read from file
-				LineNumber: lineNumber,
-				Msg:        msg,
-				Offset:     fileOffset,
-				Time:       "13:37",
-			})
+
+			logLine, err := pars(line)
+			if err != nil {
+				log.Println("Failed to pars line:", err)
+			}
+			logLine.FileName = s
+			logLine.Offset = fileOffset
+			logLine.FS = src.Name
+			logLine.LineNumber = lineNumber
+
+			logLines = append(logLines, *logLine)
 
 			lineNumber += 1
-			fileOffset += len(msg)
+			fileOffset += len(line)
 		}
 	}
 	if err := scanner.Err(); err != nil {
