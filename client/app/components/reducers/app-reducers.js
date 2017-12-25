@@ -1,5 +1,5 @@
 import {createReducer} from 'redux-immutablejs'
-import {fromJS, Map, List} from 'immutable'
+import {fromJS} from 'immutable'
 import {ACTIONS} from 'consts'
 
 const INITIAL_STATE = fromJS({

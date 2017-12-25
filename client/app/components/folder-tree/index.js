@@ -4,7 +4,7 @@ import {send} from 'sockets/socket-actions'
 import {connect} from 'react-redux'
 
 @connect(null, {
-  send
+  send,
 })
 class FolderTree extends Component {
   componentDidMount() {

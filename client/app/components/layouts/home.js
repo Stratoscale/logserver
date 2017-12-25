@@ -1,10 +1,9 @@
 import React, {Component} from 'react'
 import {Layout, Menu, Breadcrumb} from 'antd'
 import SocketContainer from 'sockets'
-import {send} from 'sockets/socket-actions'
-import {withLoader} from 'utils'
 import FolderTree from 'folder-tree'
 import {Route, Switch} from 'react-router'
+
 const {Header, Content, Footer} = Layout
 
 class Home extends Component {

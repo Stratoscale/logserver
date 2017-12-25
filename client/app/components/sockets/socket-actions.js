@@ -12,10 +12,11 @@ export function socketReady() {
 export function send(action) {
   return (dispatch, getState) => {
     socket.send(JSON.stringify({
-        meta: {
+        meta:      {
           action,
           id: messageId++,
         },
+        base_path: [],
       })
     )
   }
