@@ -55,7 +55,7 @@ type fileInstance struct {
 	FS   string `json:"fs"`
 }
 
-type fileTreeResponse struct {
+type ResponseFileTree struct {
 	Metadata `json:"meta"`
 	Tree     []fsElement `json:"tree"`
 }
@@ -83,7 +83,6 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	log.Printf("Request upgraded to: %s", r.RemoteAddr)
 
 	for {
 		var r Request
@@ -101,6 +100,10 @@ type connWriter interface {
 }
 
 func (h *handler) serve(w connWriter, r Request) {
+	path := filepath.Join(r.Path...)
+	if path == "" {
+		path = "/"
+	}
 	switch r.Action {
 	case "get-file-tree":
 		var (
@@ -109,37 +112,36 @@ func (h *handler) serve(w connWriter, r Request) {
 		)
 
 		for _, node := range h.Nodes {
-			walker := fs.WalkFS(filepath.Join(r.Path...), node.FS)
+			walker := fs.WalkFS(path, node.FS)
 			for walker.Step() {
 				if err := walker.Err(); err != nil {
 					log.Println(err)
 					continue
 				}
 
-				key := filepath.Join(walker.Path())
+				key := walker.Path()
 				element := m[key]
 				if element == nil {
-					element = &fsElement{
+					fsElements = append(fsElements, fsElement{
 						Key:   key,
 						Path:  filepath.SplitList(key),
 						IsDir: walker.Stat().IsDir(),
-					}
-					m[key] = element
+					})
+					m[key] = &fsElements[len(fsElements)-1]
 				}
-				element.Instances = append(element.Instances, fileInstance{
+				m[key].Instances = append(m[key].Instances, fileInstance{
 					Size: walker.Stat().Size(),
 					FS:   node.Name,
 				})
 			}
 		}
 		// reply
-		w.WriteJSON(&fileTreeResponse{
+		w.WriteJSON(&ResponseFileTree{
 			Metadata: Metadata{ID: r.ID, Action: r.Action},
 			Tree:     fsElements,
 		})
 
 	case "get-content":
-		path := filepath.Join(r.Path...)
 		for _, node := range h.Nodes {
 			stat, err := node.FS.Lstat(path)
 			if err != nil {
