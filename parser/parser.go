@@ -2,7 +2,9 @@ package parser
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
+	"strings"
 	"time"
 )
 
@@ -40,9 +42,10 @@ var parsers = map[string]Parser{
 }
 
 type stratologFormat struct {
-	Msg   string     `json:"msg"`
-	Level debugLevel `json:"levelname"`
-	Time  float64    `json:"created"`
+	Msg   string        `json:"msg"`
+	Level debugLevel    `json:"levelname"`
+	Time  float64       `json:"created"`
+	Args  []interface{} `json:"args"`
 }
 
 func stratologParser(line string) (*LogLine, error) {
@@ -53,8 +56,11 @@ func stratologParser(line string) (*LogLine, error) {
 		return nil, err
 	}
 
+	r := strings.NewReplacer("%s", "%v")
+	stratoFormat.Msg = r.Replace(stratoFormat.Msg)
+
 	return &LogLine{
-		Msg:   stratoFormat.Msg,
+		Msg:   fmt.Sprintf(stratoFormat.Msg, stratoFormat.Args...),
 		Level: stratoFormat.Level,
 		Time:  time.Unix(int64(stratoFormat.Time), int64(stratoFormat.Time-float64(int64(stratoFormat.Time)))).String(),
 	}, nil
