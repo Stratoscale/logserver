@@ -52,9 +52,9 @@ type ResponseFileTree struct {
 	Tree     []fsElement `json:"tree"`
 }
 
-type contentResponse struct {
+type ContentResponse struct {
 	Metadata `json:"meta"`
-	Lines    []parser.LogLine `json:"line"`
+	Lines    []parser.LogLine `json:"lines"`
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -130,6 +130,7 @@ func (h *handler) serve(w connWriter, r Request) {
 				log.Printf("Stat file %s: %s", path, err)
 				continue
 			}
+
 			if stat.IsDir() {
 				continue
 			}
@@ -139,7 +140,7 @@ func (h *handler) serve(w connWriter, r Request) {
 	case "search":
 		_ = r.Path
 		// TODO: user basepath to get file system tree
-		w.WriteJSON(&contentResponse{
+		w.WriteJSON(&ContentResponse{
 			Metadata: Metadata{ID: r.ID, Action: r.Action},
 			Lines: []parser.LogLine{
 				{Msg: "bla bla bla", Level: "debug", FS: "node0", FileName: "bla.log", LineNumber: 1},
@@ -164,40 +165,37 @@ func (h *handler) readContent(writer connWriter, r Request, src config.Src, s st
 
 	pars := parser.GetParser(suffix)
 
-	// TODO: use specific parser by file suffix to populate logLine
 	scanner := bufio.NewScanner(rc)
 
 	var logLines []parser.LogLine
+	lineNumber := 1
+	fileOffset := 0
 	for scanner.Scan() {
-		lineNumber := 1
-		fileOffset := 0
-		for scanner.Scan() {
-			line := scanner.Text()
-			if err := scanner.Err(); err != nil {
-				log.Println("reading standard input:", err)
-			}
-
-			logLine, err := pars(line)
-			if err != nil {
-				log.Println("Failed to pars line:", err)
-			}
-			logLine.FileName = s
-			logLine.Offset = fileOffset
-			logLine.FS = src.Name
-			logLine.LineNumber = lineNumber
-
-			logLines = append(logLines, *logLine)
-
-			lineNumber += 1
-			fileOffset += len(line)
+		line := scanner.Text()
+		if err := scanner.Err(); err != nil {
+			log.Println("reading standard input:", err)
 		}
+
+		logLine, err := pars(line)
+		if err != nil {
+			log.Println("Failed to pars line:", err)
+		}
+		logLine.FileName = s
+		logLine.Offset = fileOffset
+		logLine.FS = src.Name
+		logLine.LineNumber = lineNumber
+
+		logLines = append(logLines, *logLine)
+
+		lineNumber += 1
+		fileOffset += len(line)
 	}
 	if err := scanner.Err(); err != nil {
 		log.Println("Reading standard input:", err)
 		return
 	}
 
-	writer.WriteJSON(&contentResponse{
+	writer.WriteJSON(&ContentResponse{
 		Metadata: Metadata{ID: r.ID, Action: r.Action},
 		Lines:    logLines,
 	})

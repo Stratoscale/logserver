@@ -36,7 +36,7 @@ func GetParser(suffix string) Parser {
 }
 
 var parsers = map[string]Parser{
-	"stratolog": stratologParser,
+	".stratolog": stratologParser,
 }
 
 type stratologFormat struct {
