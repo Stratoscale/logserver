@@ -1,6 +1,10 @@
 package config
 
-import "github.com/kr/fs"
+import (
+	"io"
+
+	"github.com/kr/fs"
+)
 
 type Config struct {
 	Nodes []Src
@@ -8,7 +12,12 @@ type Config struct {
 
 type Src struct {
 	Name string
-	FS   fs.FileSystem
+	FS   FileSystem
+}
+
+type FileSystem interface {
+	fs.FileSystem
+	Open(path string) (io.ReadCloser, error)
 }
 
 type SrcDesc struct {
