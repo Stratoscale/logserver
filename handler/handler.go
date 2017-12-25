@@ -4,6 +4,8 @@ import (
 	"log"
 	"net/http"
 
+	"fmt"
+
 	"github.com/Stratoscale/logserver/config"
 	"github.com/gorilla/websocket"
 )
@@ -19,13 +21,13 @@ type handler struct {
 }
 
 type Metadata struct {
-	ID int `json:"id"`
+	ID     int    `json:"id"`
 	Action string `json:"action"`
 }
 
 type request struct {
 	Metadata `json:"meta"`
-	BasePath path   `json:"base_path"`
+	BasePath path `json:"base_path"`
 }
 
 type path []string
@@ -40,9 +42,9 @@ const (
 type debugLevel string
 
 const (
-	levelDebug debugLevel = "debug"
-	levelInfo debugLevel = "info"
-	levelError debugLevel = "error"
+	levelDebug   debugLevel = "debug"
+	levelInfo    debugLevel = "info"
+	levelError   debugLevel = "error"
 	levelWarning debugLevel = "warning"
 )
 
@@ -55,22 +57,22 @@ type fsElement struct {
 
 type fileTreeResponse struct {
 	Metadata `json:"meta"`
-	Tree []fsElement `json:"tree"`
+	Tree     []fsElement `json:"tree"`
 }
 
 type LogLine struct {
-	Msg string `json:"msg"`
-	Level debugLevel `json:"level"`
-	Time string `json:"time"`
-	FS string `json:"fs"`
-	FileName string `json:"file-name"`
-	LineNumber int `json:"line-number"`
-	Offset int `json:"offset"`
+	Msg        string     `json:"msg"`
+	Level      debugLevel `json:"level"`
+	Time       string     `json:"time"`
+	FS         string     `json:"fs"`
+	FileName   string     `json:"file-name"`
+	LineNumber int        `json:"line-number"`
+	Offset     int        `json:"offset"`
 }
 
 type contentResponse struct {
 	Metadata `json:"meta"`
-	Lines []LogLine `json:"line"`
+	Lines    []LogLine `json:"line"`
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -84,13 +86,12 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Request upgraded to: %s", r.RemoteAddr)
 
 	for {
-		var r request
-		err := conn.ReadJSON(&r)
+		_, b, err := conn.ReadMessage()
 		if err != nil {
 			log.Printf("read: %s", err)
 			return
 		}
-		go h.serve(conn, r)
+		fmt.Print("got: %s", string(b))
 	}
 }
 
