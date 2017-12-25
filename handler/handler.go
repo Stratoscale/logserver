@@ -18,9 +18,13 @@ type handler struct {
 	config.Config
 }
 
+type Metadata struct {
+	ID int `json:"id"`
+	Action string `json:"action"`
+}
+
 type request struct {
-	ID       int    `json:"id"`
-	Action   string `json:"action"`
+	Metadata `json:"meta"`
 	BasePath path   `json:"base_path"`
 }
 
@@ -36,10 +40,10 @@ const (
 type debugLevel string
 
 const (
-	debug debugLevel = "debug"
-	info debugLevel = "info"
-	error debugLevel = "error"
-	warning debugLevel = "warning"
+	levelDebug debugLevel = "debug"
+	levelInfo debugLevel = "info"
+	levelError debugLevel = "error"
+	levelWarning debugLevel = "warning"
 )
 
 type fsElement struct {
@@ -49,12 +53,8 @@ type fsElement struct {
 	FS   string   `json:"fs"`
 }
 
-type response struct {
-	ID int `json:"id"`
-}
-
 type fileTreeResponse struct {
-	response
+	Metadata `json:"meta"`
 	Tree []fsElement `json:"tree"`
 }
 
@@ -69,7 +69,7 @@ type LogLine struct {
 }
 
 type contentResponse struct {
-	response
+	Metadata `json:"meta"`
 	Lines []LogLine `json:"line"`
 }
 
@@ -105,7 +105,7 @@ func (h *handler) serve(w connWriter, r request) {
 
 		// TODO: user basepath to get file system tree
 		w.WriteJSON(&fileTreeResponse{
-			response: response{ID: r.ID},
+			Metadata: Metadata{ID: r.ID, Action: r.Action},
 			Tree: []fsElement{
 				{Path: []string{"var"}, Type: dir, FS: "node0"},
 				{Path: []string{"var"}, Type: dir, FS: "node1"},
@@ -121,7 +121,7 @@ func (h *handler) serve(w connWriter, r request) {
 		_ = r.BasePath
 		// TODO: user basepath to get file system tree
 		w.WriteJSON(&contentResponse{
-			response: response{ID: r.ID},
+			Metadata: Metadata{ID: r.ID, Action: r.Action},
 			Lines: []LogLine{
 				{Msg: "bla bla bla", Level: "debug", FS: "node0", FileName: "bla.log", LineNumber: 1},
 				{Msg: "bla bla", Level: "debug", FS: "node1", FileName: "bla.log", LineNumber: 100},
@@ -133,12 +133,13 @@ func (h *handler) serve(w connWriter, r request) {
 		_ = r.BasePath
 		// TODO: user basepath to get file system tree
 		w.WriteJSON(&contentResponse{
-			response: response{ID: r.ID},
+			Metadata: Metadata{ID: r.ID, Action: r.Action},
 			Lines: []LogLine{
-				{Msg: "bla bla bla", Level: debug, FS: "node0", FileName: "bla.log", LineNumber: 1},
-				{Msg: "bla bla", Level: debug, FS: "node1", FileName: "bla.log", LineNumber: 100},
-				{Msg: "harta barta", Level: warning, FS: "node1", FileName: "harta.log", LineNumber: 1},
-				{Msg: "harta barta", Level: error, FS: "node2", FileName: "harta.log", LineNumber: 7},
+				{Msg: "bla bla bla", Level: levelDebug, FS: "node0", FileName: "bla.log", LineNumber: 1},
+				{Msg: "bla bla", Level: levelDebug, FS: "node1", FileName: "bla.log", LineNumber: 100},
+				{Msg: "harta barta", Level: levelWarning, FS: "node1", FileName: "harta.log", LineNumber: 1},
+				{Msg: "harta barta", Level: levelInfo, FS: "node2", FileName: "harta.log", LineNumber: 7},
+				{Msg: "panic error!", Level: levelError, FS: "node2", FileName: "harta.log", LineNumber: 7},
 			},
 		})
 	}
