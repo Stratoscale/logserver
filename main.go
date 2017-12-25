@@ -9,7 +9,7 @@ import (
 	"os"
 
 	"github.com/Stratoscale/logserver/config"
-	"github.com/Stratoscale/logserver/handler"
+	"github.com/Stratoscale/logserver/ws"
 	"github.com/gorilla/mux"
 )
 
@@ -46,13 +46,10 @@ func main() {
 }
 
 func router(cfg config.Config) http.Handler {
-	var (
-		ws     = handler.New(cfg)
-		static = http.FileServer(http.Dir("./client/dist"))
-	)
+	var static = http.FileServer(http.Dir("./client/dist"))
 
 	r := mux.NewRouter()
-	r.Methods(http.MethodGet).Path("/ws").Handler(ws)
+	r.Methods(http.MethodGet).Path("/ws").Handler(ws.New(cfg))
 	r.Methods(http.MethodGet).PathPrefix("/").Handler(static)
 	return r
 }

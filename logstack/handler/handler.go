@@ -10,7 +10,7 @@ import (
 
 	"github.com/Stratoscale/logserver/config"
 	"github.com/Stratoscale/logserver/filesystem"
-	"github.com/Stratoscale/logserver/handler"
+	"github.com/Stratoscale/logserver/ws"
 )
 
 type Config struct {
@@ -18,21 +18,9 @@ type Config struct {
 	Root string
 }
 
-func fileInSlice(filename string, list []os.FileInfo) bool {
-	for _, b := range list {
-		if !b.IsDir() && b.Name() == filename {
-			return true
-		}
-	}
-	return false
-}
-
 func (l *Config) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
 	fullpath := filepath.Join(l.Root, r.URL.Path)
-
 	dir, _ := ioutil.ReadDir(r.URL.Path)
-
 	if !fileInSlice("logstack.enable", dir) {
 		http.FileServer(http.Dir(fullpath))
 		return
@@ -49,6 +37,14 @@ func (l *Config) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			handlerConfig.Nodes = append(handlerConfig.Nodes, s)
 		}
 	}
-	handler.New(handlerConfig).ServeHTTP(w, r)
+	ws.New(handlerConfig).ServeHTTP(w, r)
+}
 
+func fileInSlice(filename string, list []os.FileInfo) bool {
+	for _, b := range list {
+		if !b.IsDir() && b.Name() == filename {
+			return true
+		}
+	}
+	return false
 }
