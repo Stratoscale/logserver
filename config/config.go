@@ -42,7 +42,7 @@ func New(fc FileConfig) (*Config, error) {
 		switch u.Scheme {
 		case "file":
 			fs, err = filesystem.NewLocalFS(u)
-		case "sftp":
+		case "sftp", "ssh":
 			fs, err = filesystem.NewSFTP(u)
 		case "http":
 			// TODO
