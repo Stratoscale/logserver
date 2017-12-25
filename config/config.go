@@ -1,11 +1,10 @@
 package config
 
 import (
-	"io"
 	"net/url"
 
 	"github.com/Stratoscale/logserver/filesystem"
-	"github.com/kr/fs"
+	"github.com/Stratoscale/logserver/filesystem/targz"
 )
 
 const (
@@ -26,17 +25,7 @@ type GlobalConfig struct {
 // Source is a filesystem source
 type Source struct {
 	Name string
-	FS   FileSystem
-}
-
-// Filesystem represents a filesystem, which can be local or remote
-type FileSystem interface {
-	fs.FileSystem
-	// Open opens a file in the filesystem
-	Open(path string) (io.ReadCloser, error)
-	// Close closes the filesystem.
-	// This is useful for remote filesystems, like http, or sftp
-	Close() error
+	FS   filesystem.FileSystem
 }
 
 // FileConfig is logserver configuration in a file
@@ -58,7 +47,7 @@ func New(fc FileConfig) (*Config, error) {
 		if err != nil {
 			return c, err
 		}
-		var fs FileSystem
+		var fs filesystem.FileSystem
 		switch u.Scheme {
 		case "file":
 			fs, err = filesystem.NewLocalFS(u)
@@ -72,6 +61,7 @@ func New(fc FileConfig) (*Config, error) {
 		if err != nil {
 			return nil, err
 		}
+		fs = targz.New(fs)
 		c.Sources = append(c.Sources, Source{srcDesc.Name, fs})
 	}
 	c.GlobalConfig = fc.Global
