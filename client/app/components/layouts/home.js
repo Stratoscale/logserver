@@ -36,9 +36,9 @@ class Breadcrumbs extends Component {
         </Breadcrumb>
       )
     }
-
-
+    return null
   }
+
 }
 
 class Home extends Component {
@@ -54,8 +54,9 @@ class Home extends Component {
           <div style={{background: '#fff', padding: 24, minHeight: 280}}>
             <Switch>
               <Route path="/files/*" component={FileTree} exact={false}/>
-              <Route path="/files" component={FileTree} exact={false}/>
               <Route path="/view" component={FileView} exact={false}/>
+              <Route path="/files" component={FileTree} exact={false}/>
+              <Route component={FileTree} exact={false}/>
             </Switch>
           </div>
         </Content>

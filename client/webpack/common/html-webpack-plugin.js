@@ -1,16 +1,15 @@
-var path = require('path');
+var path = require('path')
 
 function cacheBusterQuery() {
-  return `cb=${Math.round(Date.now() / 1000)}`;
+  return `cb=${Math.round(Date.now() / 1000)}`
 }
 
-module.exports = function htmlWebpackPlugin(config, APP_PATH, CLUSTER_VERSION) {
+module.exports = function htmlWebpackPlugin(config, APP_PATH) {
   return {
-    title: config.title,
-    chunks: ['loader'],
+    title:            config.title,
+    chunks:           ['app'],
     cacheBusterQuery: cacheBusterQuery,
-    favicon: path.resolve(APP_PATH, 'images', 'favico.png'),
-    template: path.resolve(APP_PATH, 'index.html'),
-    cluster_version: CLUSTER_VERSION,
+    favicon:          path.resolve(APP_PATH, 'images', 'favico.png'),
+    template:         path.resolve(APP_PATH, 'index.html'),
   }
-};
+}
