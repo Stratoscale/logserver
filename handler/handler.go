@@ -33,6 +33,15 @@ const (
 	dir  fileType = "dir"
 )
 
+type debugLevel string
+
+const (
+	debug debugLevel = "debug"
+	info debugLevel = "info"
+	error debugLevel = "error"
+	warning debugLevel = "warning"
+)
+
 type fsElement struct {
 	Path path     `json:"path"`
 	Type fileType `json:"type"`
@@ -51,7 +60,7 @@ type fileTreeResponse struct {
 
 type LogLine struct {
 	Msg string `json:"msg"`
-	Level string `json:"level"`
+	Level debugLevel `json:"level"`
 	Time string `json:"time"`
 	FS string `json:"fs"`
 	FileName string `json:"file-name"`
@@ -126,10 +135,10 @@ func (h *handler) serve(w connWriter, r request) {
 		w.WriteJSON(&contentResponse{
 			response: response{ID: r.ID},
 			Lines: []LogLine{
-				{Msg: "bla bla bla", Level: "debug", FS: "node0", FileName: "bla.log", LineNumber: 1},
-				{Msg: "bla bla", Level: "debug", FS: "node1", FileName: "bla.log", LineNumber: 100},
-				{Msg: "harta barta", Level: "info", FS: "node1", FileName: "harta.log", LineNumber: 1},
-				{Msg: "harta barta", Level: "info", FS: "node2", FileName: "harta.log", LineNumber: 7},
+				{Msg: "bla bla bla", Level: debug, FS: "node0", FileName: "bla.log", LineNumber: 1},
+				{Msg: "bla bla", Level: debug, FS: "node1", FileName: "bla.log", LineNumber: 100},
+				{Msg: "harta barta", Level: warning, FS: "node1", FileName: "harta.log", LineNumber: 1},
+				{Msg: "harta barta", Level: error, FS: "node2", FileName: "harta.log", LineNumber: 7},
 			},
 		})
 	}
