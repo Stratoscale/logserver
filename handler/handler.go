@@ -44,10 +44,15 @@ const (
 )
 
 type fsElement struct {
-	Path  pathArr `json:"path"`
-	IsDir bool    `json:"is_dir"`
-	Size  int64   `json:"size"`
-	FS    string  `json:"fs"`
+	Key       string         `json:"key"`
+	Path      pathArr        `json:"path"`
+	IsDir     bool           `json:"is_dir"`
+	Instances []fileInstance `json:"instances"`
+}
+
+type fileInstance struct {
+	Size int64  `json:"size"`
+	FS   string `json:"fs"`
 }
 
 type fileTreeResponse struct {
@@ -98,7 +103,11 @@ type connWriter interface {
 func (h *handler) serve(w connWriter, r Request) {
 	switch r.Action {
 	case "get-file-tree":
-		var fsElements []fsElement
+		var (
+			fsElements []fsElement
+			m          = make(map[string]*fsElement)
+		)
+
 		for _, node := range h.Nodes {
 			walker := fs.WalkFS(filepath.Join(r.Path...), node.FS)
 			for walker.Step() {
@@ -107,11 +116,19 @@ func (h *handler) serve(w connWriter, r Request) {
 					continue
 				}
 
-				fsElements = append(fsElements, fsElement{
-					Path:  filepath.SplitList(walker.Path()),
-					IsDir: walker.Stat().IsDir(),
-					Size:  walker.Stat().Size(),
-					FS:    node.Name,
+				key := filepath.Join(walker.Path())
+				element := m[key]
+				if element == nil {
+					element = &fsElement{
+						Key:   key,
+						Path:  filepath.SplitList(key),
+						IsDir: walker.Stat().IsDir(),
+					}
+					m[key] = element
+				}
+				element.Instances = append(element.Instances, fileInstance{
+					Size: walker.Stat().Size(),
+					FS:   node.Name,
 				})
 			}
 		}
@@ -120,6 +137,7 @@ func (h *handler) serve(w connWriter, r Request) {
 			Metadata: Metadata{ID: r.ID, Action: r.Action},
 			Tree:     fsElements,
 		})
+
 	case "get-content":
 		path := filepath.Join(r.Path...)
 		for _, node := range h.Nodes {
