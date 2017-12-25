@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"os"
-
+	"io"
 	"fmt"
 
 	"path/filepath"
@@ -65,6 +65,11 @@ func (vfs) Lstat(name string) (os.FileInfo, error) {
 func (vfs) Join(elem ...string) string {
 	return filepath.Join(elem...)
 }
+
+func (f *vfs) Open(name string) (io.ReadCloser, error) {
+	return os.Open(filepath.Join("base", name))
+}
+
 
 func TestUnmarshal(t *testing.T) {
 	a := `{"meta":{"action":"get-file-tree","id":1},"base_path":["a"]}`

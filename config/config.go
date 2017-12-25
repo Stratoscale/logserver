@@ -35,7 +35,7 @@ func New(sources []SrcDesc) (*Config, error) {
 		if err != nil {
 			return c, err
 		}
-		var fs fs.FileSystem
+		var fs FileSystem
 		switch fsContext.Scheme {
 		case "file":
 			fs = &filesystem.LocalFS{BaseFS: filesystem.BaseFS{fsContext}}
