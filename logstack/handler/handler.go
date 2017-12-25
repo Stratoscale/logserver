@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"regexp"
 
 	"github.com/Stratoscale/logserver/config"
 	"github.com/Stratoscale/logserver/filesystem"
@@ -14,14 +13,14 @@ import (
 )
 
 type Config struct {
-	Re   *regexp.Regexp
-	Root string
+	Root     string
+	MarkFile string
 }
 
-func (l *Config) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fullpath := filepath.Join(l.Root, r.URL.Path)
+func (c *Config) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	fullpath := filepath.Join(c.Root, r.URL.Path)
 	dir, _ := ioutil.ReadDir(r.URL.Path)
-	if !fileInSlice("logstack.enable", dir) {
+	if !fileInSlice(c.MarkFile, dir) {
 		http.FileServer(http.Dir(fullpath))
 		return
 	}

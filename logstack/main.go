@@ -2,14 +2,10 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
-
 	"os"
-
-	"regexp"
-
-	"fmt"
 
 	"github.com/Stratoscale/logserver/logstack/handler"
 	"github.com/gorilla/mux"
@@ -18,6 +14,7 @@ import (
 var options struct {
 	rootPath string
 	port     int
+	markFile string
 }
 
 func init() {
@@ -26,13 +23,15 @@ func init() {
 		panic(err)
 	}
 	flag.StringVar(&options.rootPath, "root", cwd, "path to root directory")
+	flag.StringVar(&options.markFile, "mark-file", "logstack.enable", "file that marks test root")
 	flag.IntVar(&options.port, "port", 8888, "port to listen on")
+
 }
 
 func main() {
 	h := &handler.Config{
-		Re:   regexp.MustCompile(""),
-		Root: options.rootPath,
+		Root:     options.rootPath,
+		MarkFile: options.markFile,
 	}
 
 	r := mux.NewRouter()
