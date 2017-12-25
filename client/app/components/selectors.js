@@ -8,4 +8,11 @@ export const isSocketReady = createSelector(
   (app = Map()) => app.get('socket_ready', false)
 )
 
+export const currentPathSelector = createSelector(
+  appStateSelector,
+  (app = Map()) => app.get('current_path')
+)
+
 export const filesSelector = (state, props) => state.get('files', List())
+
+export const locationSelect = (state = Map()) => state.get('router').location || {}

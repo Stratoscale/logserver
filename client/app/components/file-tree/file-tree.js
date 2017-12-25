@@ -3,19 +3,28 @@ import {Map} from 'immutable'
 import {List, Icon} from 'antd'
 import {withLoader} from 'utils'
 import {send} from 'sockets/socket-actions'
-import {connect} from 'react-redux'
 import {API_ACTIONS} from 'consts'
+import {connect} from 'react-redux'
 import {createStructuredSelector} from 'reselect'
-import {filesSelector} from 'selectors'
+import {filesSelector, locationSelect} from 'selectors'
+import {setCurrentPath} from 'file-tree/file-actions'
+import {Link} from 'react-router-dom'
 
-const File = ({path, isDir}) => {
-  return <List.Item className="file"><Icon type={isDir ? 'folder' : 'file'}/> {path.join('/')}</List.Item>
+const File = ({path, is_dir}) => {
+  const last = path[path.length - 1]
+  return (
+    <List.Item className="file">
+      <Icon type={is_dir ? 'folder' : 'file'}/> <Link to={`/files/${path.join('/')}`}>{last}</Link>
+    </List.Item>
+  )
 }
 
 @connect(createStructuredSelector({
-  files: filesSelector,
+  files:    filesSelector,
+  location: locationSelect,
 }), {
   send,
+  setCurrentPath,
 })
 class FileTree extends Component {
   componentDidMount() {
@@ -25,11 +34,14 @@ class FileTree extends Component {
   }
 
   render() {
-    const {files} = this.props
+    const {files, match: {params}} = this.props
+
+    const path = (params[0] || '').split('/').filter(Boolean)
+
     return (
       <List
-        dataSource={files.get('files', Map()).valueSeq().toJS()}
-        renderItem={File}
+        dataSource={files.getIn(path.concat(['files']), Map()).valueSeq().toJS()}
+        renderItem={file => <File {...file}/>}
       />
     )
   }
