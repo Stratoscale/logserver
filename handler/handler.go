@@ -66,6 +66,8 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	go reader(conn)
+
 	for {
 		var r Request
 		err = conn.ReadJSON(&r)
@@ -75,6 +77,10 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		go h.serve(conn, r)
 	}
+}
+
+func reader(conn *websocket.Conn) {
+
 }
 
 type connWriter interface {
