@@ -19,13 +19,13 @@ type handler struct {
 }
 
 type Metadata struct {
-	ID int `json:"id"`
+	ID     int    `json:"id"`
 	Action string `json:"action"`
 }
 
 type request struct {
 	Metadata `json:"meta"`
-	BasePath path   `json:"base_path"`
+	BasePath path `json:"base_path"`
 }
 
 type path []string
@@ -40,9 +40,9 @@ const (
 type debugLevel string
 
 const (
-	levelDebug debugLevel = "debug"
-	levelInfo debugLevel = "info"
-	levelError debugLevel = "error"
+	levelDebug   debugLevel = "debug"
+	levelInfo    debugLevel = "info"
+	levelError   debugLevel = "error"
 	levelWarning debugLevel = "warning"
 )
 
@@ -55,22 +55,22 @@ type fsElement struct {
 
 type fileTreeResponse struct {
 	Metadata `json:"meta"`
-	Tree []fsElement `json:"tree"`
+	Tree     []fsElement `json:"tree"`
 }
 
 type LogLine struct {
-	Msg string `json:"msg"`
-	Level debugLevel `json:"level"`
-	Time string `json:"time"`
-	FS string `json:"fs"`
-	FileName string `json:"file-name"`
-	LineNumber int `json:"line-number"`
-	Offset int `json:"offset"`
+	Msg        string     `json:"msg"`
+	Level      debugLevel `json:"level"`
+	Time       string     `json:"time"`
+	FS         string     `json:"fs"`
+	FileName   string     `json:"file-name"`
+	LineNumber int        `json:"line-number"`
+	Offset     int        `json:"offset"`
 }
 
 type contentResponse struct {
 	Metadata `json:"meta"`
-	Lines []LogLine `json:"line"`
+	Lines    []LogLine `json:"line"`
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -123,10 +123,11 @@ func (h *handler) serve(w connWriter, r request) {
 		w.WriteJSON(&contentResponse{
 			Metadata: Metadata{ID: r.ID, Action: r.Action},
 			Lines: []LogLine{
-				{Msg: "bla bla bla", Level: "debug", FS: "node0", FileName: "bla.log", LineNumber: 1},
-				{Msg: "bla bla", Level: "debug", FS: "node1", FileName: "bla.log", LineNumber: 100},
-				{Msg: "harta barta", Level: "info", FS: "node1", FileName: "harta.log", LineNumber: 1},
-				{Msg: "harta barta", Level: "info", FS: "node2", FileName: "harta.log", LineNumber: 7},
+				{Msg: "bla bla bla", Level: levelDebug, FS: "node0", FileName: "bla.log", LineNumber: 1},
+				{Msg: "bla bla", Level: levelDebug, FS: "node1", FileName: "bla.log", LineNumber: 100},
+				{Msg: "harta barta", Level: levelWarning, FS: "node1", FileName: "harta.log", LineNumber: 1},
+				{Msg: "harta barta", Level: levelInfo, FS: "node2", FileName: "harta.log", LineNumber: 7},
+				{Msg: "panic error!", Level: levelError, FS: "node2", FileName: "harta.log", LineNumber: 7},
 			},
 		})
 	case "search":
