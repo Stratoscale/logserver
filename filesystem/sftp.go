@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"net"
+
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 )
@@ -19,14 +21,16 @@ type SFTP struct {
 
 // NewSFTP returns a new SFTP filesystem
 func NewSFTP(u *url.URL) (*SFTP, error) {
-	config := &ssh.ClientConfig{
-		User: u.User.Username(),
+	config := &ssh.ClientConfig{}
+	if u.User != nil {
+		config.User = u.User.Username()
+		if password, ok := u.User.Password(); ok {
+			config.Auth = append(config.Auth, ssh.Password(password))
+		}
 	}
-	if password, ok := u.User.Password(); ok {
-		config.Auth = append(config.Auth, ssh.Password(password))
-	}
+	config.HostKeyCallback = func(hostname string, remote net.Addr, key ssh.PublicKey) error { return nil }
 
-	conn, err := ssh.Dial("tcp", u.Hostname(), config)
+	conn, err := ssh.Dial("tcp", u.Host, config)
 	if err != nil {
 		return nil, fmt.Errorf("dial %s: %s", u.Hostname(), err)
 	}
