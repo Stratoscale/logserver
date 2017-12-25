@@ -6,17 +6,15 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-
 	"os"
 
 	"github.com/Stratoscale/logserver/config"
 	"github.com/Stratoscale/logserver/handler"
-	"github.com/gobuffalo/packr"
 	"github.com/gorilla/mux"
 )
 
 const (
-	defaultConfig = "logserver.yml"
+	defaultConfig = "logserver.json"
 	port          = 8888
 )
 
@@ -31,7 +29,6 @@ func init() {
 }
 
 func main() {
-
 	f, err := os.Open(options.jsonFile)
 	failOnErr(err, fmt.Sprintf("open file %s", options.jsonFile))
 	defer f.Close()
@@ -43,24 +40,26 @@ func main() {
 	handlerConfig, err := config.New(cf)
 	failOnErr(err, "creating config")
 
-	ws := handler.New(*handlerConfig)
-	static := http.FileServer(packr.NewBox("./client/dist"))
+	log.Printf("serving on http://localhost:%d", options.port)
+	err = http.ListenAndServe(fmt.Sprintf(":%d", options.port), router(*handlerConfig))
+	failOnErr(err, "serving")
+}
+
+func router(cfg config.Config) http.Handler {
+	var (
+		ws     = handler.New(cfg)
+		static = http.FileServer(http.Dir("./client/dist"))
+	)
 
 	r := mux.NewRouter()
 	r.Methods(http.MethodGet).Path("/ws").Handler(ws)
 	r.Methods(http.MethodGet).PathPrefix("/").Handler(static)
-
-	log.Printf("serving on http://localhost:%d", options.port)
-	err = http.ListenAndServe(fmt.Sprintf(":%d", options.port), r)
-	if err != nil {
-		panic(err)
-	}
+	return r
 }
 
 func failOnErr(err error, msg string) {
 	if err == nil {
 		return
 	}
-
 	log.Fatalf("%s: %s", msg, err)
 }

@@ -1,0 +1,12 @@
+{
+  "services": [
+    {
+      "name": "node1",
+      "url": "file://./example/log1"
+    },
+    {
+      "name": "node2",
+      "url": "file://./example/log2"
+    }
+  ]
+}
