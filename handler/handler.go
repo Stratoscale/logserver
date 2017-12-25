@@ -4,27 +4,18 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/Stratoscale/logserver/config"
 	"github.com/gorilla/websocket"
-	"github.com/kr/fs"
 )
 
-type Config struct {
-	Nodes []Src
-}
-
-type Src struct {
-	Name string
-	FS   fs.FileSystem
-}
-
-func New(c Config) http.Handler {
+func New(c config.Config) http.Handler {
 	return &handler{
 		Config: c,
 	}
 }
 
 type handler struct {
-	Config
+	config.Config
 }
 
 type request struct {
