@@ -10,13 +10,22 @@ import {filesSelector, locationSelect} from 'selectors'
 import {setCurrentPath} from 'file-tree/file-actions'
 import {Link} from 'react-router-dom'
 
-const File = ({path, is_dir, fs}) => {
+const File = ({path, is_dir, instances}) => {
   const last = path[path.length - 1]
+  let content
+  if (is_dir) {
+    content = <span><Icon type={'folder'}/><Link to={`/files/${path.join('/')}`}>{last}</Link></span>
+  } else {
+
+    const viewURL = `/view?file=/${path.join('/')}`
+    content       = <span>
+      <Icon type={'file'}/> <Link to={viewURL}>{last}</Link>
+      {instances.map(instance => <Tag key={instance.fs}><Link to={`${viewURL}&fs=${instance.fs}`}>{instance.fs}</Link></Tag>)}
+    </span>
+  }
   return (
     <List.Item className="file">
-      <Icon type={is_dir ? 'folder' : 'file'}/> <Link to={is_dir ? `/files/${path.join('/')}` : `/view?file=/${path.join('/')}`}>{last}</Link>
-      {fs.map(node => <Tag key={node}>{node}</Tag>)}
-
+      {content}
     </List.Item>
   )
 }

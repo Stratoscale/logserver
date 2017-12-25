@@ -1,5 +1,5 @@
 import React, {Component} from 'react'
-import {Layout, Menu, Breadcrumb} from 'antd'
+import {Layout, Breadcrumb} from 'antd'
 import SocketContainer from 'sockets'
 import FileTree from 'file-tree'
 import {Route, Switch} from 'react-router'
@@ -22,7 +22,7 @@ class Breadcrumbs extends Component {
       const filename = queryString.parse(location.search).file
       return (
         <Breadcrumb style={{margin: '16px 0'}}>
-          <Breadcrumb.Item><Link to={`/files/`}>Home</Link></Breadcrumb.Item>
+          <Breadcrumb.Item><Link to={'/files/'}>Home</Link></Breadcrumb.Item>
           <Breadcrumb.Item>View {filename}</Breadcrumb.Item>
         </Breadcrumb>
       )

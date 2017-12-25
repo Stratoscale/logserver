@@ -10,8 +10,7 @@ export function setFiles(state = Map(), {payload}) {
       const file = fromJS(_file)
       const path = file.get('path', List())
       state.updateIn(path.butLast(), (node = Map()) => {
-        const filename = path.join('/')
-        return node.mergeIn(['files', filename], file)
+        return node.mergeIn(['files', file.get('key')], file)
       })
     })
   })
