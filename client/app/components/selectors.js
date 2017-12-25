@@ -15,4 +15,9 @@ export const currentPathSelector = createSelector(
 
 export const filesSelector = (state, props) => state.get('files', List())
 
+export const contentSelector = createSelector(
+  appStateSelector,
+  (app = Map()) => app.get('content')
+)
+
 export const locationSelect = (state = Map()) => state.get('router').location || {}

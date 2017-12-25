@@ -1,10 +1,11 @@
 import {Component} from 'react'
 import {connect} from 'react-redux'
-import {setFiles, socketReady} from 'sockets/socket-actions'
+import {setContent, setFiles, socketReady} from 'sockets/socket-actions'
+import {API_ACTIONS} from 'consts'
 
 let socket = null
 
-@connect(null, {socketReady, setFiles})
+@connect(null, {socketReady, setFiles, setContent})
 export default class SocketContainer extends Component {
   constructor(props) {
     super(props)
@@ -22,8 +23,21 @@ export default class SocketContainer extends Component {
 
       // Listen for messages
       socket.addEventListener('message', (event) => {
-        const {tree} = JSON.parse(event.data)
-        this.props.setFiles(tree)
+        const {meta, ...payload} = JSON.parse(event.data)
+        switch (meta.action) {
+          case API_ACTIONS.GET_FILE_TREE: {
+            this.props.setFiles(payload.tree)
+            break;
+          }
+          case API_ACTIONS.GET_CONTENT: {
+            this.props.setContent(payload.line)
+            break
+          }
+          default: {
+            console.warn('Unknown action returned from API', meta, payload)
+          }
+        }
+
       })
     }
   }

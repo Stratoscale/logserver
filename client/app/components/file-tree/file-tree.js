@@ -1,6 +1,6 @@
 import React, {Component} from 'react'
 import {Map} from 'immutable'
-import {List, Icon} from 'antd'
+import {List, Icon, Tag} from 'antd'
 import {withLoader} from 'utils'
 import {send} from 'sockets/socket-actions'
 import {API_ACTIONS} from 'consts'
@@ -10,11 +10,13 @@ import {filesSelector, locationSelect} from 'selectors'
 import {setCurrentPath} from 'file-tree/file-actions'
 import {Link} from 'react-router-dom'
 
-const File = ({path, is_dir}) => {
+const File = ({path, is_dir, fs}) => {
   const last = path[path.length - 1]
   return (
     <List.Item className="file">
-      <Icon type={is_dir ? 'folder' : 'file'}/> <Link to={`/files/${path.join('/')}`}>{last}</Link>
+      <Icon type={is_dir ? 'folder' : 'file'}/> <Link to={is_dir ? `/files/${path.join('/')}` : `/view?file=/${path.join('/')}`}>{last}</Link>
+      {fs.map(node => <Tag key={node}>{node}</Tag>)}
+
     </List.Item>
   )
 }

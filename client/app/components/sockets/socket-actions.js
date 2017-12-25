@@ -16,6 +16,13 @@ export function setFiles(files) {
   }
 }
 
+export function setContent(payload) {
+  return {
+    type: ACTIONS.SET_CONTENT,
+    payload,
+  }
+}
+
 export function send(action, data) {
   return (dispatch, getState) => {
     socket.send(JSON.stringify({
