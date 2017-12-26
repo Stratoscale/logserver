@@ -3,7 +3,6 @@ package targz
 import (
 	"io"
 	"os"
-	"fmt"
 	"strings"
 	"path/filepath"
 	"github.com/Stratoscale/logserver/filesystem"
@@ -68,19 +67,16 @@ func (w *wrap) Lstat(name string) (os.FileInfo, error) {
 }
 
 func (w *wrap) Join(elem ...string) string {
-	return w.inner.ReadDir(name)
+	return w.inner.Join(elem...)
 }
 
 func (w *wrap) Open(name string) (io.ReadCloser, error) {
-	fmt.Println("bp1")
 	if !strings.Contains(name, suffix) {
 		return w.inner.Open(name)
 	}
-	fmt.Println("bp1")
 	tfs, innerPath, err := w.getTfs(name)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("bp1")
 	return tfs.Open(innerPath)
 }

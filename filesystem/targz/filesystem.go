@@ -75,12 +75,13 @@ func (f *FileSystem) Join(elem ...string) string {
 	return filepath.Join(elem...)
 }
 
-// Join implements the FileSystem Join method,
 func (f *FileSystem) Open(name string) (io.ReadCloser, error) {
+	fmt.Println("tar open")
 	_, err := f.Lstat(name)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("tar open")
 	return &readCloser{Reader: f.Reader, Closer: f.Closer}, nil
 }
 

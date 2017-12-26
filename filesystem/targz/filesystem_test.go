@@ -1,6 +1,7 @@
 package targz
 
 import (
+	"os"
 	"fmt"
 	"testing"
 	"net/url"
@@ -10,7 +11,11 @@ import (
 
 func Test_wrapper(t *testing.T) {
 	fmt.Println("bp5")
-	_url := "file://./example/log3"
+	cwd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	_url := fmt.Sprintf("file://%s/../../example/log3", cwd)
 	parsedUrl, err := url.Parse(_url)
 	fmt.Println("bp6")
 	var fs filesystem.FileSystem
@@ -21,11 +26,19 @@ func Test_wrapper(t *testing.T) {
 	}
 	fmt.Println("bp8")
 	fs = New(fs)
-	fs.Open("dir2/logs.tar.gz/first/second/third/tar_service.log")
+	// _, err = fs.Open("dir2/logs.tar.gz/first/second/third/tar_service.log")
+	_, err = fs.Open("dir2/logs.tar.gz")
+	if err != nil {
+		panic(err)
+	}
+	_, err = fs.Open("dir2/logs.tar.gz/first/second/third/tar_service_doesnt_exists.log")
+	if err == nil {
+		fmt.Errorf("succeed to open non existent file")
+		assert.NotNil(t, err)
+	}
 }
 
-func test_isInDir(t *testing.T) {
-	fmt.Println("bp5")
+func Test_isInDir(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
