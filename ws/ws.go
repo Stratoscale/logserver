@@ -184,7 +184,6 @@ func (h *handler) search(ch chan<- interface{}, req Request, node config.Source,
 }
 
 func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, path string, re *regexp.Regexp) {
-	log.Printf("XXX %s %s", node.Name, path)
 	stat, err := node.FS.Lstat(path)
 	if err != nil {
 		log.Printf("Failed stat %s", path)
@@ -247,7 +246,8 @@ func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, p
 		log.Println("Scan:", err)
 		return
 	}
-	if (len(logLines) != 0 && re == nil) || !sentAny {
-		ch <- &Response{Metadata: respMeta, Lines: logLines}
+	if len(logLines) == 0 && !sentAny {
+		return
 	}
+	ch <- &Response{Metadata: respMeta, Lines: logLines}
 }

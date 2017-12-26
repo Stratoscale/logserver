@@ -58,7 +58,7 @@ func TestWS(t *testing.T) {
 			want: ws.Response{
 				Metadata: ws.Metadata{ID: 9, Action: "search", FS: "node1", Path: ws.Path{"mancala.stratolog"}},
 				Lines: []parser.LogLine{
-					{Msg: "data disk <disk: hostname=stratonode2.node.strato, ID=2d03c436-c197-464f-9ad0-d861e650cd61, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "/mancala.stratolog", LineNumber: 2, Offset: 699},
+					{Msg: "data disk <disk: hostname=stratonode2.node.strato, ID=2d03c436-c197-464f-9ad0-d861e650cd61, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "mancala.stratolog", LineNumber: 2, Offset: 699},
 				},
 			},
 		},
@@ -68,52 +68,52 @@ func TestWS(t *testing.T) {
 			want: ws.Response{
 				Metadata: ws.Metadata{ID: 9, Action: "search", FS: "node1", Path: ws.Path{"mancala.stratolog"}},
 				Lines: []parser.LogLine{
-					{Msg: "data disk <disk: hostname=stratonode2.node.strato, ID=2d03c436-c197-464f-9ad0-d861e650cd61, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "/mancala.stratolog", LineNumber: 2, Offset: 699},
+					{Msg: "data disk <disk: hostname=stratonode2.node.strato, ID=2d03c436-c197-464f-9ad0-d861e650cd61, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "mancala.stratolog", LineNumber: 2, Offset: 699},
 				},
 			},
 		},
-		//{
-		//	name:    "get-file-tree",
-		//	message: `{"meta":{"action":"get-file-tree","id":7},"base_path":[]}`,
-		//	want: ws.Response{
-		//		Metadata: ws.Metadata{ID: 9, Action: "get-file-tree", FS: "node1", Path: ws.Path{}},
-		//		Tree: []ws.FSElement{
-		//			{
-		//				Key:       "dir1",
-		//				Path:      ws.Path{"dir1"},
-		//				IsDir:     true,
-		//				Instances: []ws.FileInstance{{Size: 4096, FS: "node1"}},
-		//			},
-		//			{
-		//				Key:       "dir1/service3.log",
-		//				Path:      ws.Path{"dir1", "service3.log"},
-		//				IsDir:     false,
-		//				Instances: []ws.FileInstance{{Size: 0, FS: "node1"}},
-		//			},
-		//			{
-		//				Key:       "mancala.stratolog",
-		//				Path:      ws.Path{"mancala.stratolog"},
-		//				IsDir:     false,
-		//				Instances: []ws.FileInstance{{Size: 2100, FS: "node1"}},
-		//			},
-		//			{
-		//				Key:   "service1.log",
-		//				Path:  ws.Path{"service1.log"},
-		//				IsDir: false,
-		//				Instances: []ws.FileInstance{
-		//					{Size: 0, FS: "node1"},
-		//					{Size: 0, FS: "node2"},
-		//				},
-		//			},
-		//			{
-		//				Key:       "service2.log",
-		//				Path:      ws.Path{"service2.log"},
-		//				IsDir:     false,
-		//				Instances: []ws.FileInstance{{Size: 0, FS: "node1"}},
-		//			},
-		//		},
-		//	},
-		//},
+		{
+			name:    "get-file-tree",
+			message: `{"meta":{"action":"get-file-tree","id":7},"base_path":[]}`,
+			want: ws.Response{
+				Metadata: ws.Metadata{ID: 9, Action: "get-file-tree", FS: "node1", Path: ws.Path{}},
+				Tree: []ws.FSElement{
+					{
+						Key:       "dir1",
+						Path:      ws.Path{"dir1"},
+						IsDir:     true,
+						Instances: []ws.FileInstance{{Size: 4096, FS: "node1"}},
+					},
+					{
+						Key:       "dir1/service3.log",
+						Path:      ws.Path{"dir1", "service3.log"},
+						IsDir:     false,
+						Instances: []ws.FileInstance{{Size: 0, FS: "node1"}},
+					},
+					{
+						Key:       "mancala.stratolog",
+						Path:      ws.Path{"mancala.stratolog"},
+						IsDir:     false,
+						Instances: []ws.FileInstance{{Size: 2100, FS: "node1"}},
+					},
+					{
+						Key:   "service1.log",
+						Path:  ws.Path{"service1.log"},
+						IsDir: false,
+						Instances: []ws.FileInstance{
+							{Size: 0, FS: "node1"},
+							{Size: 0, FS: "node2"},
+						},
+					},
+					{
+						Key:       "service2.log",
+						Path:      ws.Path{"service2.log"},
+						IsDir:     false,
+						Instances: []ws.FileInstance{{Size: 0, FS: "node1"}},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
