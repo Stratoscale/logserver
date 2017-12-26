@@ -65,34 +65,51 @@ func TestWS_GetContentStratolog(t *testing.T) {
 	require.Nil(err)
 	assert.Equal(t, httpResp.StatusCode, http.StatusSwitchingProtocols)
 
-	require.Nil(conn.WriteMessage(1, []byte(`{"meta":{"action":"get-content","id":9},"path":["mancala.stratolog"]}`)))
-
-	var resp ws.ResponseContent
-	require.Nil(conn.ReadJSON(&resp))
-
-	expResp := ws.ResponseContent{
-		Metadata: ws.Metadata{ID: 9, Action: "get-content"},
-		Lines: []parser.LogLine{
-			{Msg: "data disk <disk: hostname=stratonode1.node.strato, ID=dce9381a-cada-434d-a1ba-4e351f4afcbb, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "mancala.stratolog", LineNumber: 1, Offset: 0},
-			{Msg: "data disk <disk: hostname=stratonode2.node.strato, ID=2d03c436-c197-464f-9ad0-d861e650cd61, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "mancala.stratolog", LineNumber: 2, Offset: 699},
-			{Msg: "data disk <disk: hostname=stratonode0.node.strato, ID=f3d510c7-1185-4942-b349-0de055165f78, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "mancala.stratolog", LineNumber: 3, Offset: 1398},
+	tests := []struct {
+		name    string
+		message string
+		want    ws.ResponseContent
+	}{
+		{
+			name:    "get content",
+			message: `{"meta":{"action":"get-content","id":9},"path":["mancala.stratolog"]}`,
+			want: ws.ResponseContent{
+				Metadata: ws.Metadata{ID: 9, Action: "get-content"},
+				Lines: []parser.LogLine{
+					{Msg: "data disk <disk: hostname=stratonode1.node.strato, ID=dce9381a-cada-434d-a1ba-4e351f4afcbb, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "mancala.stratolog", LineNumber: 1, Offset: 0},
+					{Msg: "data disk <disk: hostname=stratonode2.node.strato, ID=2d03c436-c197-464f-9ad0-d861e650cd61, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "mancala.stratolog", LineNumber: 2, Offset: 699},
+					{Msg: "data disk <disk: hostname=stratonode0.node.strato, ID=f3d510c7-1185-4942-b349-0de055165f78, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "mancala.stratolog", LineNumber: 3, Offset: 1398},
+				},
+			},
+		},
+		{
+			name:    "search",
+			message: `{"meta":{"action":"search","id":9},"path":[], "regexp": "2d03c436-c197-464f-9ad0-d861e650cd61"}`,
+			want: ws.ResponseContent{
+				Metadata: ws.Metadata{ID: 9, Action: "search"},
+				Lines: []parser.LogLine{
+					{Msg: "data disk <disk: hostname=stratonode2.node.strato, ID=2d03c436-c197-464f-9ad0-d861e650cd61, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "/mancala.stratolog", LineNumber: 2, Offset: 699},
+				},
+			},
+		},
+		{
+			name:    "search regexp",
+			message: `{"meta":{"action":"search","id":9},"path":[], "regexp": "2d03c436-[c197]+-464f-9ad0-d861e650cd61"}`,
+			want: ws.ResponseContent{
+				Metadata: ws.Metadata{ID: 9, Action: "search"},
+				Lines: []parser.LogLine{
+					{Msg: "data disk <disk: hostname=stratonode2.node.strato, ID=2d03c436-c197-464f-9ad0-d861e650cd61, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "/mancala.stratolog", LineNumber: 2, Offset: 699},
+				},
+			},
 		},
 	}
 
-	assert.Equal(t, expResp, resp)
-
-	// Test search
-	require.Nil(conn.WriteMessage(1, []byte(`{"meta":{"action":"search","id":9},"path":[], "regexp": "2d03c436-c197-464f-9ad0-d861e650cd61"}`)))
-
-	require.Nil(conn.ReadJSON(&resp))
-
-	expResp = ws.ResponseContent{
-		Metadata: ws.Metadata{ID: 9, Action: "search"},
-		Lines: []parser.LogLine{
-			{Msg: "data disk <disk: hostname=stratonode2.node.strato, ID=2d03c436-c197-464f-9ad0-d861e650cd61, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "/mancala.stratolog", LineNumber: 2, Offset: 699},
-		},
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Nil(conn.WriteMessage(1, []byte(tt.message)))
+			var got ws.ResponseContent
+			require.Nil(conn.ReadJSON(&got))
+			assert.Equal(t, tt.want, got)
+		})
 	}
-
-	assert.Equal(t, expResp, resp)
-
 }
