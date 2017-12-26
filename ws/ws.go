@@ -223,9 +223,7 @@ func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, p
 
 		logLine, err := pars(scanner.Bytes())
 		if err != nil {
-			log.Println("Failed to pars line:", err)
-			// TODO: failed? return error?
-			continue
+			logLine = &parser.LogLine{Msg: scanner.Text()}
 		}
 		logLine.FileName = path
 		logLine.Offset = fileOffset
