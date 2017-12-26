@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log"
 	"net/url"
 
 	"github.com/Stratoscale/logserver/filesystem"
@@ -70,4 +71,13 @@ func New(fc FileConfig) (*Config, error) {
 		c.GlobalConfig.ContentBatchSize = defaultContentBatchSize
 	}
 	return c, nil
+}
+
+func (c *Config) CloseSources() {
+	for _, src := range c.Sources {
+		err := src.FS.Close()
+		if err != nil {
+			log.Printf("Closing source %s", src.Name)
+		}
+	}
 }

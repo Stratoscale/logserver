@@ -9,8 +9,7 @@ import (
 	"os"
 
 	"github.com/Stratoscale/logserver/config"
-	"github.com/Stratoscale/logserver/ws"
-	"github.com/gorilla/mux"
+	"github.com/Stratoscale/logserver/router"
 )
 
 const (
@@ -41,30 +40,11 @@ func main() {
 	c, err := config.New(cf)
 	failOnErr(err, "creating config")
 
-	defer closeSources(c)
+	defer c.CloseSources()
 
 	log.Printf("serving on http://localhost:%d", options.port)
-	err = http.ListenAndServe(fmt.Sprintf(":%d", options.port), router(*c))
+	err = http.ListenAndServe(fmt.Sprintf(":%d", options.port), router.New(*c))
 	failOnErr(err, "serving")
-}
-func closeSources(c *config.Config) {
-	for _, src := range c.Sources {
-		err := src.FS.Close()
-		if err != nil {
-			log.Printf("Closing source %s", src.Name)
-		}
-	}
-}
-
-func router(cfg config.Config) http.Handler {
-	var static = http.FileServer(http.Dir("./client/dist"))
-
-	r := mux.NewRouter()
-	r.Methods(http.MethodGet).Path("/ws").Handler(ws.New(cfg))
-	r.Methods(http.MethodGet).PathPrefix("/files").Handler(http.StripPrefix("/files", http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "./client/dist/index.html") })))
-	r.Methods(http.MethodGet).PathPrefix("/").Handler(static)
-	return r
 }
 
 func failOnErr(err error, msg string) {

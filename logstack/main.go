@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/Stratoscale/logserver/logstack/handler"
-	"github.com/gorilla/mux"
 )
 
 var options struct {
@@ -34,11 +33,8 @@ func main() {
 		MarkFile: options.markFile,
 	}
 
-	r := mux.NewRouter()
-	r.Methods(http.MethodGet).Path("/ws").Handler(h)
-
 	log.Printf("serving on http://localhost:%d", options.port)
-	err := http.ListenAndServe(fmt.Sprintf(":%d", options.port), r)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", options.port), h)
 	if err != nil {
 		panic(err)
 	}
