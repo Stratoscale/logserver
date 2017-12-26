@@ -4,7 +4,9 @@ import (
 	"io"
 	"os"
 	"strings"
-	"path/filepath"
+
+	"fmt"
+
 	"github.com/Stratoscale/logserver/filesystem"
 )
 
@@ -16,32 +18,6 @@ func New(inner filesystem.FileSystem) filesystem.FileSystem {
 
 type wrap struct {
 	inner filesystem.FileSystem
-}
-
-func split(dirname string) (string, string) {
-	paths := strings.Split(dirname, suffix)
-	tarName := filepath.Dir(paths[0])
-	if len(paths) == 1 {
-		return tarName, ""
-	}
-	innerPath := strings.Trim(paths[1], "/")
-	return tarName, innerPath
-
-
-}
-
-func (w *wrap) getTfs(dirname string) (filesystem.FileSystem, string, error) {
-	tarName, innerPath := split(dirname)
-	f, err := w.inner.Open(tarName)
-	defer f.Close()
-	if err != nil {
-		return nil, "", err
-	}
-	tfs, err := NewFS(f)
-	if err != nil {
-		return nil, "", err
-	}
-	return tfs, innerPath, err
 }
 
 func (w *wrap) ReadDir(dirname string) ([]os.FileInfo, error) {
@@ -71,12 +47,44 @@ func (w *wrap) Join(elem ...string) string {
 }
 
 func (w *wrap) Open(name string) (io.ReadCloser, error) {
-	if !strings.Contains(name, suffix) {
-		return w.inner.Open(name)
-	}
 	tfs, innerPath, err := w.getTfs(name)
 	if err != nil {
 		return nil, err
 	}
+	if tfs == nil { // we are outside the tar filesystem
+		return w.inner.Open(name)
+	}
+	if innerPath == "" {
+		return nil, fmt.Errorf("no such file ''")
+	}
 	return tfs.Open(innerPath)
+}
+
+func (w *wrap) getTfs(dirname string) (filesystem.FileSystem, string, error) {
+	tarName, innerPath := split(dirname)
+	if tarName == "" {
+		return nil, dirname, nil
+	}
+	f, err := w.inner.Open(tarName)
+	if err != nil {
+		return nil, "", err
+	}
+	tfs, err := NewFS(f)
+	if err != nil {
+		return nil, "", err
+	}
+	return tfs, innerPath, err
+}
+
+func split(dirname string) (tarName string, innerPath string) {
+	i := strings.Index(dirname, suffix)
+	if i == -1 {
+		return "", dirname
+	}
+
+	i += len(suffix)
+
+	tarName = dirname[:i]
+	innerPath = strings.Trim(dirname[i:], string(os.PathSeparator))
+	return
 }

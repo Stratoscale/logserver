@@ -1,22 +1,25 @@
 package targz
 
 import (
-	"os"
 	"fmt"
-	"testing"
 	"net/url"
-	"github.com/test-go/testify/assert"
+	"os"
+	"testing"
+
+	"io/ioutil"
+
 	"github.com/Stratoscale/logserver/filesystem"
+	"github.com/test-go/testify/assert"
+	"github.com/test-go/testify/require"
 )
 
 func Test_wrapper(t *testing.T) {
 	fmt.Println("bp5")
 	cwd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
+	require.Nil(t, err)
 	_url := fmt.Sprintf("file://%s/../../example/log3", cwd)
 	parsedUrl, err := url.Parse(_url)
+	require.Nil(t, err)
 	fmt.Println("bp6")
 	var fs filesystem.FileSystem
 	fs, err = filesystem.NewLocalFS(parsedUrl)
@@ -26,15 +29,37 @@ func Test_wrapper(t *testing.T) {
 	}
 	fmt.Println("bp8")
 	fs = New(fs)
-	// _, err = fs.Open("dir2/logs.tar.gz/first/second/third/tar_service.log")
-	_, err = fs.Open("dir2/logs.tar.gz")
-	if err != nil {
-		panic(err)
+	tests := []struct {
+		path        string
+		wantErr     bool
+		wantContent string
+	}{
+		{
+			path:    "dir2/logs.tar.gz",
+			wantErr: true,
+		},
+		{
+			path:    "dir2/logs.tar.gz/first/second/third/tar_service_doesnt_exists.log",
+			wantErr: true,
+		},
+		{
+			path:        "dir2/logs.tar.gz/first/second/third/tar_service.log",
+			wantContent: "blabla\n",
+		},
 	}
-	_, err = fs.Open("dir2/logs.tar.gz/first/second/third/tar_service_doesnt_exists.log")
-	if err == nil {
-		fmt.Errorf("succeed to open non existent file")
-		assert.NotNil(t, err)
+
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			f, err := fs.Open(tt.path)
+			if tt.wantErr {
+				assert.NotNil(t, err)
+				return
+			}
+			assert.Nil(t, err)
+			gotContent, err := ioutil.ReadAll(f)
+			require.Nil(t, err)
+			assert.Equal(t, tt.wantContent, string(gotContent))
+		})
 	}
 }
 
