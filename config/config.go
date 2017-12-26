@@ -42,7 +42,7 @@ type FileSystem interface {
 // FileConfig is logserver configuration in a file
 type FileConfig struct {
 	Global  GlobalConfig   `json:"global"`
-	Sources []SourceConfig `json:"source"`
+	Sources []SourceConfig `json:"sources"`
 }
 
 // SourceConfig is used to configure a filesystem source

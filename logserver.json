@@ -1,12 +1,12 @@
 {
-  "services": [
+  "sources": [
     {
       "name": "node1",
-      "url": "file://./example/log1"
+      "url": "file:///home/guy/work/go/src/github.com/Stratoscale/logserver/example/log1"
     },
     {
       "name": "node2",
-      "url": "file://./example/log2"
+      "url": "file:///home/guy/work/go/src/github.com/Stratoscale/logserver/example/log2"
     }
   ]
 }
