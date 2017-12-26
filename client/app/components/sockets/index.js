@@ -14,7 +14,7 @@ export default class SocketContainer extends Component {
   componentWillMount() {
     if (!socket) {
 
-      socket = new WebSocket(`ws://${window.location.host}/ws`)
+      socket = new WebSocket(`ws://${window.location.host + window.location.pathname}ws`)
 
       // Connection opened
       socket.addEventListener('open', (event) => {

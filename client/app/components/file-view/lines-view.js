@@ -45,7 +45,7 @@ class LinesView extends Component {
         </div>
         <div className="lines-view">
           {lines.map((line = Map(), index) => <div key={index} className={cn('line', line.get('level', '').toLowerCase())}>
-            <Tag color={colorByLevel(line.get('level'))}>{line.get('level')}</Tag> {line.get('msg')}</div>)}
+            {line.get('level') ? <Tag color={colorByLevel(line.get('level'))}>{line.get('level')}</Tag> : null} {line.get('msg')}</div>)}
         </div>
       </div>
     )
