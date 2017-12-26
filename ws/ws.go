@@ -220,6 +220,7 @@ func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, p
 		lineNumber = 1
 		fileOffset = 0
 		respMeta   = Metadata{ID: req.Metadata.ID, Action: req.Metadata.Action, FS: node.Name, Path: strings.Split(path, "/")}
+		sentAny    = false
 	)
 
 	if respMeta.Path[0] == "" {
@@ -248,6 +249,7 @@ func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, p
 
 		// if we read lines more than the defined batch size, send them to the client and continue
 		if len(logLines) > h.Config.ContentBatchSize {
+			sentAny = true
 			ch <- &Response{Metadata: respMeta, Lines: logLines}
 			logLines = nil
 		}
@@ -256,5 +258,7 @@ func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, p
 		log.Println("Scan:", err)
 		return
 	}
-	ch <- &Response{Metadata: respMeta, Lines: logLines}
+	if (len(logLines) != 0 || !sentAny) && re != nil {
+		ch <- &Response{Metadata: respMeta, Lines: logLines}
+	}
 }
