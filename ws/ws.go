@@ -2,16 +2,14 @@ package ws
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
-	"sync"
-
 	"regexp"
-
-	"fmt"
-
 	"strings"
+	"sync"
 
 	"github.com/Stratoscale/logserver/config"
 	"github.com/Stratoscale/logserver/parser"
@@ -30,37 +28,37 @@ type handler struct {
 }
 
 type Metadata struct {
-	ID     int     `json:"id"`
-	Action string  `json:"action"`
-	FS     string  `json:"fs,omitempty"`
-	Path   pathArr `json:"path,omitempty"`
+	ID     int    `json:"id"`
+	Action string `json:"action"`
+	FS     string `json:"fs,omitempty"`
+	Path   Path   `json:"path,omitempty"`
 }
 
 type Request struct {
 	Metadata `json:"meta"`
-	Path     pathArr `json:"path"`
-	Regexp   string  `json:"regexp"`
+	Path     Path   `json:"path"`
+	Regexp   string `json:"regexp"`
 }
 
-type pathArr []string
-
-type fsElement struct {
-	Key       string         `json:"key"`
-	Path      pathArr        `json:"path"`
-	IsDir     bool           `json:"is_dir"`
-	Instances []fileInstance `json:"instances"`
-}
-
-type fileInstance struct {
-	Size int64  `json:"size"`
-	FS   string `json:"fs"`
-}
+type Path []string
 
 type Response struct {
 	Metadata `json:"meta"`
 	Lines    []parser.LogLine `json:"lines,omitempty"`
 	Error    string           `json:"error,omitempty"`
-	Tree     []fsElement      `json:"tree,omitempty"`
+	Tree     []*FSElement     `json:"tree,omitempty"`
+}
+
+type FSElement struct {
+	Key       string         `json:"key"`
+	Path      Path           `json:"path"`
+	IsDir     bool           `json:"is_dir"`
+	Instances []FileInstance `json:"instances"`
+}
+
+type FileInstance struct {
+	Size int64  `json:"size"`
+	FS   string `json:"fs"`
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -97,36 +95,38 @@ func reader(conn *websocket.Conn, ch <-chan interface{}) {
 }
 
 func (h *handler) serve(ch chan<- interface{}, r Request) {
-	path := filepath.Join(r.Path...)
-	if path == "" {
-		path = "/"
-	}
 	switch r.Action {
 	case "get-file-tree":
 		var (
-			fsElements []fsElement
-			m          = make(map[string]*fsElement)
+			fsElements []*FSElement
+			m          = make(map[string]*FSElement)
 		)
 
 		for _, node := range h.Sources {
+			path := node.FS.Join(r.Path...)
 			walker := fs.WalkFS(path, node.FS)
 			for walker.Step() {
 				if err := walker.Err(); err != nil {
-					log.Printf("walk: %s", err)
+					log.Printf("Walk: %s", err)
 					continue
 				}
 
-				key := walker.Path()
+				key := strings.Trim(walker.Path(), string(os.PathSeparator))
+				if key == "" {
+					continue
+				}
+
 				element := m[key]
 				if element == nil {
-					fsElements = append(fsElements, fsElement{
+					fsElements = append(fsElements, &FSElement{
 						Key:   key,
-						Path:  filepath.SplitList(key),
+						Path:  strings.Split(key, string(os.PathSeparator)),
 						IsDir: walker.Stat().IsDir(),
 					})
-					m[key] = &fsElements[len(fsElements)-1]
+					m[key] = fsElements[len(fsElements)-1]
 				}
-				m[key].Instances = append(m[key].Instances, fileInstance{
+				log.Printf("XXX %s -> %s", key, node.Name)
+				m[key].Instances = append(m[key].Instances, FileInstance{
 					Size: walker.Stat().Size(),
 					FS:   node.Name,
 				})
@@ -139,11 +139,11 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 		}
 
 	case "get-content":
-		fmt.Println("GET CONTENT REQUEST")
 		wg := sync.WaitGroup{}
 		wg.Add(len(h.Sources))
 		for _, node := range h.Sources {
 			go func(node config.Source) {
+				path := node.FS.Join(r.Path...)
 				h.read(ch, r, node, path, nil)
 				wg.Done()
 			}(node)
@@ -158,10 +158,12 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 				Error:    fmt.Sprintf("Bad regexp %s: %s", r.Regexp, err),
 			}
 		}
+
 		wg := sync.WaitGroup{}
 		wg.Add(len(h.Sources))
 		for _, node := range h.Sources {
 			go func(node config.Source) {
+				path := node.FS.Join(r.Path...)
 				h.search(ch, r, node, path, re)
 				wg.Done()
 			}(node)
@@ -185,9 +187,11 @@ func (h *handler) search(ch chan<- interface{}, req Request, node config.Source,
 func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, path string, re *regexp.Regexp) {
 	stat, err := node.FS.Lstat(path)
 	if err != nil {
+		log.Printf("Failed stat %s", path)
 		return
 	}
 	if stat.IsDir() {
+		log.Printf("Is a dir %s", path)
 		return
 	}
 
@@ -205,6 +209,7 @@ func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, p
 		lineNumber = 1
 		fileOffset = 0
 		respMeta   = Metadata{ID: req.Metadata.ID, Action: req.Metadata.Action, FS: node.Name, Path: strings.Split(path, "/")}
+		sentAny    = false
 	)
 
 	if respMeta.Path[0] == "" {
@@ -233,6 +238,7 @@ func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, p
 
 		// if we read lines more than the defined batch size, send them to the client and continue
 		if len(logLines) > h.Config.ContentBatchSize {
+			sentAny = true
 			ch <- &Response{Metadata: respMeta, Lines: logLines}
 			logLines = nil
 		}
@@ -241,10 +247,8 @@ func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, p
 		log.Println("Scan:", err)
 		return
 	}
-	if len(logLines) > 0 {
-		ch <- &Response{Metadata: respMeta, Lines: logLines}
+	if len(logLines) == 0 && !sentAny {
+		return
 	}
-	//else {
-	//	ch <- &Response{Metadata: req.Metadata, Error: "No content in this fs"}
-	//}
+	ch <- &Response{Metadata: respMeta, Lines: logLines}
 }
