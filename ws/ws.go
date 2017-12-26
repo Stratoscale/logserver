@@ -11,6 +11,8 @@ import (
 
 	"fmt"
 
+	"strings"
+
 	"github.com/Stratoscale/logserver/config"
 	"github.com/Stratoscale/logserver/parser"
 	"github.com/gorilla/websocket"
@@ -28,10 +30,10 @@ type handler struct {
 }
 
 type Metadata struct {
-	ID     int    `json:"id"`
-	Action string `json:"action"`
-	FS     string `json:"fs,omitempty"`
-	Path   string `json:"path,omitempty"`
+	ID     int     `json:"id"`
+	Action string  `json:"action"`
+	FS     string  `json:"fs,omitempty"`
+	Path   pathArr `json:"path,omitempty"`
 }
 
 type Request struct {
@@ -202,8 +204,13 @@ func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, p
 		logLines   []parser.LogLine
 		lineNumber = 1
 		fileOffset = 0
-		respMeta   = Metadata{ID: req.Metadata.ID, Action: req.Metadata.Action, FS: node.Name, Path: path}
+		respMeta   = Metadata{ID: req.Metadata.ID, Action: req.Metadata.Action, FS: node.Name, Path: strings.Split(path, "/")}
 	)
+
+	if respMeta.Path[0] == "" {
+		respMeta.Path = respMeta.Path[1:]
+	}
+
 	for scanner.Scan() {
 		if re != nil && !re.Match(scanner.Bytes()) {
 			lineNumber += 1
