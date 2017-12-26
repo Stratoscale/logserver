@@ -38,6 +38,7 @@ type Request struct {
 	Metadata `json:"meta"`
 	Path     Path   `json:"path"`
 	Regexp   string `json:"regexp"`
+	FsFilter []string `json:"fs_filter"`
 }
 
 type Path []string
@@ -94,6 +95,16 @@ func reader(conn *websocket.Conn, ch <-chan interface{}) {
 	}
 }
 
+
+func isContain(list []string, elm string) bool {
+	for _, _elm := range list {
+		if elm == _elm {
+			return true
+		}
+	}
+	return false
+}
+
 func (h *handler) serve(ch chan<- interface{}, r Request) {
 	switch r.Action {
 	case "get-file-tree":
@@ -103,6 +114,9 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 		)
 
 		for _, node := range h.Sources {
+			if len(r.FsFilter) > 0 && isContain(r.FsFilter, node.Name) {
+				continue
+			}
 			path := node.FS.Join(r.Path...)
 			walker := fs.WalkFS(path, node.FS)
 			for walker.Step() {
@@ -141,6 +155,9 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 		wg := sync.WaitGroup{}
 		wg.Add(len(h.Sources))
 		for _, node := range h.Sources {
+			if len(r.FsFilter) > 0 && isContain(r.FsFilter, node.Name) {
+				continue
+			}
 			go func(node config.Source) {
 				path := node.FS.Join(r.Path...)
 				h.read(ch, r, node, path, nil)
@@ -161,6 +178,9 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 		wg := sync.WaitGroup{}
 		wg.Add(len(h.Sources))
 		for _, node := range h.Sources {
+			if len(r.FsFilter) > 0 && isContain(r.FsFilter, node.Name) {
+				continue
+			}
 			go func(node config.Source) {
 				path := node.FS.Join(r.Path...)
 				h.search(ch, r, node, path, re)
