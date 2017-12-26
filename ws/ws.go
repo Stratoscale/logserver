@@ -30,6 +30,8 @@ type handler struct {
 type Metadata struct {
 	ID     int    `json:"id"`
 	Action string `json:"action"`
+	FS     string `json:"fs,omitempty"`
+	Path   string `json:"path,omitempty"`
 }
 
 type Request struct {
@@ -52,19 +54,11 @@ type fileInstance struct {
 	FS   string `json:"fs"`
 }
 
-type ResponseFileTree struct {
+type Response struct {
 	Metadata `json:"meta"`
-	Tree     []fsElement `json:"tree"`
-}
-
-type ResponseContent struct {
-	Metadata `json:"meta"`
-	Lines    []parser.LogLine `json:"lines"`
-}
-
-type ResponseError struct {
-	Metadata `json:"meta"`
-	Error    string
+	Lines    []parser.LogLine `json:"lines,omitempty"`
+	Error    string           `json:"error,omitempty"`
+	Tree     []fsElement      `json:"tree,omitempty"`
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -137,12 +131,13 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 			}
 		}
 		// reply
-		ch <- &ResponseFileTree{
+		ch <- &Response{
 			Metadata: r.Metadata,
 			Tree:     fsElements,
 		}
 
 	case "get-content":
+		fmt.Println("GET CONTENT REQUEST")
 		wg := sync.WaitGroup{}
 		wg.Add(len(h.Sources))
 		for _, node := range h.Sources {
@@ -156,7 +151,7 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 	case "search":
 		re, err := regexp.Compile(r.Regexp)
 		if err != nil {
-			ch <- &ResponseError{
+			ch <- &Response{
 				Metadata: r.Metadata,
 				Error:    fmt.Sprintf("Bad regexp %s: %s", r.Regexp, err),
 			}
@@ -188,7 +183,6 @@ func (h *handler) search(ch chan<- interface{}, req Request, node config.Source,
 func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, path string, re *regexp.Regexp) {
 	stat, err := node.FS.Lstat(path)
 	if err != nil {
-		log.Printf("Stat %s: %s", path, err)
 		return
 	}
 	if stat.IsDir() {
@@ -208,6 +202,7 @@ func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, p
 		logLines   []parser.LogLine
 		lineNumber = 1
 		fileOffset = 0
+		respMeta   = Metadata{ID: req.Metadata.ID, Action: req.Metadata.Action, FS: node.Name, Path: path}
 	)
 	for scanner.Scan() {
 		if re != nil && !re.Match(scanner.Bytes()) {
@@ -231,7 +226,7 @@ func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, p
 
 		// if we read lines more than the defined batch size, send them to the client and continue
 		if len(logLines) > h.Config.ContentBatchSize {
-			ch <- &ResponseContent{Metadata: req.Metadata, Lines: logLines}
+			ch <- &Response{Metadata: respMeta, Lines: logLines}
 			logLines = nil
 		}
 	}
@@ -240,6 +235,9 @@ func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, p
 		return
 	}
 	if len(logLines) > 0 {
-		ch <- &ResponseContent{Metadata: req.Metadata, Lines: logLines}
+		ch <- &Response{Metadata: respMeta, Lines: logLines}
 	}
+	//else {
+	//	ch <- &Response{Metadata: req.Metadata, Error: "No content in this fs"}
+	//}
 }
