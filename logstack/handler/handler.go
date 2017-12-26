@@ -29,11 +29,11 @@ func (c *Config) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if file.Mode().IsDir() {
 			u := url.URL{Scheme: "file://", Path: filepath.Join(fullpath + file.Name())}
 			fs, _ := filesystem.NewLocalFS(&u)
-			s := config.Src{
+			s := config.Source{
 				Name: file.Name(),
 				FS:   fs,
 			}
-			handlerConfig.Nodes = append(handlerConfig.Nodes, s)
+			handlerConfig.Sources = append(handlerConfig.Sources, s)
 		}
 	}
 	ws.New(handlerConfig).ServeHTTP(w, r)

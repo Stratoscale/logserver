@@ -37,12 +37,22 @@ func main() {
 	err = json.NewDecoder(f).Decode(&cf)
 	failOnErr(err, "decode file")
 
-	handlerConfig, err := config.New(cf)
+	c, err := config.New(cf)
 	failOnErr(err, "creating config")
 
+	defer closeSources(c)
+
 	log.Printf("serving on http://localhost:%d", options.port)
-	err = http.ListenAndServe(fmt.Sprintf(":%d", options.port), router(*handlerConfig))
+	err = http.ListenAndServe(fmt.Sprintf(":%d", options.port), router(*c))
 	failOnErr(err, "serving")
+}
+func closeSources(c *config.Config) {
+	for _, src := range c.Sources {
+		err := src.FS.Close()
+		if err != nil {
+			log.Printf("Closing source %s", src.Name)
+		}
+	}
 }
 
 func router(cfg config.Config) http.Handler {

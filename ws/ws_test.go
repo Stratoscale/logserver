@@ -20,7 +20,7 @@ func TestHandler_ServeHTTP(t *testing.T) {
 	t.Parallel()
 
 	h := New(config.Config{
-		Nodes: []config.Src{
+		Sources: []config.Source{
 			{
 				Name: "node1",
 				FS:   new(vfs),

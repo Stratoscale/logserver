@@ -112,7 +112,7 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 			m          = make(map[string]*fsElement)
 		)
 
-		for _, node := range h.Nodes {
+		for _, node := range h.Sources {
 			walker := fs.WalkFS(path, node.FS)
 			for walker.Step() {
 				if err := walker.Err(); err != nil {
@@ -144,9 +144,9 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 
 	case "get-content":
 		wg := sync.WaitGroup{}
-		wg.Add(len(h.Nodes))
-		for _, node := range h.Nodes {
-			go func(node config.Src) {
+		wg.Add(len(h.Sources))
+		for _, node := range h.Sources {
+			go func(node config.Source) {
 				h.read(ch, r, node, path, nil)
 				wg.Done()
 			}(node)
@@ -162,9 +162,9 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 			}
 		}
 		wg := sync.WaitGroup{}
-		wg.Add(len(h.Nodes))
-		for _, node := range h.Nodes {
-			go func(node config.Src) {
+		wg.Add(len(h.Sources))
+		for _, node := range h.Sources {
+			go func(node config.Source) {
 				h.search(ch, r, node, path, re)
 				wg.Done()
 			}(node)
@@ -173,7 +173,7 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 	}
 }
 
-func (h *handler) search(ch chan<- interface{}, req Request, node config.Src, path string, re *regexp.Regexp) {
+func (h *handler) search(ch chan<- interface{}, req Request, node config.Source, path string, re *regexp.Regexp) {
 	var walker = fs.WalkFS(path, node.FS)
 	for walker.Step() {
 		if err := walker.Err(); err != nil {
@@ -185,7 +185,7 @@ func (h *handler) search(ch chan<- interface{}, req Request, node config.Src, pa
 	}
 }
 
-func (h *handler) read(ch chan<- interface{}, req Request, node config.Src, path string, re *regexp.Regexp) {
+func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, path string, re *regexp.Regexp) {
 	stat, err := node.FS.Lstat(path)
 	if err != nil {
 		log.Printf("Stat %s: %s", path, err)

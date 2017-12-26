@@ -21,7 +21,7 @@ func TestWS_GetFileTree(t *testing.T) {
 	cwd, err := os.Getwd()
 	require.Nil(err)
 	cfg, err := config.New(config.FileConfig{
-		Sources: []config.SrcDesc{
+		Sources: []config.SourceConfig{
 			{Name: "node1", URL: fmt.Sprintf("file://%s/example/log1", cwd)},
 			{Name: "node2", URL: fmt.Sprintf("file://%s/example/log2", cwd)},
 		},
@@ -50,7 +50,7 @@ func TestWS_GetContentStratolog(t *testing.T) {
 	cwd, err := os.Getwd()
 	require.Nil(err)
 	cfg, err := config.New(config.FileConfig{
-		Sources: []config.SrcDesc{
+		Sources: []config.SourceConfig{
 			{Name: "node1", URL: fmt.Sprintf("file://%s/example/log1", cwd)},
 			{Name: "node2", URL: fmt.Sprintf("file://%s/example/log2", cwd)},
 		},
