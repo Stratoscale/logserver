@@ -5,9 +5,9 @@ import {contentSelector, filesSelector, locationSelect} from 'selectors'
 import {connect} from 'react-redux'
 import {createStructuredSelector} from 'reselect'
 import queryString from 'query-string'
-import {send} from 'sockets/socket-actions'
-import cn from 'classnames'
+import {send, setSearch} from 'sockets/socket-actions'
 import {API_ACTIONS} from 'consts'
+import LinesView from 'file-view/lines-view'
 
 @connect(createStructuredSelector({
   location: locationSelect,
@@ -15,12 +15,13 @@ import {API_ACTIONS} from 'consts'
   files:    filesSelector,
 }), {
   send,
+  setSearch,
 })
 class FileView extends Component {
   componentDidMount() {
     const {location, send} = this.props
     const search           = queryString.parse(location.search)
-
+    this.props.setSearch('')
     send(API_ACTIONS.GET_FILE_TREE, {
       base_path: [],
     })
@@ -48,7 +49,7 @@ class FileView extends Component {
         <div>
           {file.get('instances', List()).map(instance => <Tag>{instance.get('fs')}</Tag>)}
         </div>
-        <div>{content.map((line, index) => <div key={index} className={cn(line.level)}>{line.msg}</div>)}</div>
+        <LinesView lines={content}/>
       </div>
     )
   }

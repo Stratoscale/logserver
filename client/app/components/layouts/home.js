@@ -4,12 +4,14 @@ import FileTree from 'file-tree'
 import {Route, Switch} from 'react-router'
 import {connect} from 'react-redux'
 import {createStructuredSelector} from 'reselect'
-import {filesSelector, filterSelector, locationSelect} from 'selectors'
-import {Link} from 'react-router-dom'
+import {filesSelector, filterSelector, locationSelect, searchSelector} from 'selectors'
+import {Link, Redirect} from 'react-router-dom'
 import FileView from 'file-view'
 import queryString from 'query-string'
-import {withLoader} from 'utils'
-import {setFilter} from 'sockets/socket-actions'
+import {navigate, withLoader} from 'utils'
+import {clearSearchResults, send, setFilter, setSearch} from 'sockets/socket-actions'
+import {API_ACTIONS} from 'consts'
+import SearchView from 'file-view/search-view'
 
 const {Header, Content, Footer} = Layout
 
@@ -28,7 +30,6 @@ class Breadcrumbs extends Component {
 
   render() {
     const {location, files, filter} = this.props
-    console.log('home.js@render: files', files)
     if (location.pathname.startsWith('/view')) {
       const filename = queryString.parse(location.search).file
       return (
@@ -49,12 +50,41 @@ class Breadcrumbs extends Component {
           </Breadcrumb.Item> : null}
         </Breadcrumb>
       )
+
+    } else if (location.pathname.startsWith('/search')) {
+      return (
+        <Breadcrumb style={{margin: '16px 0'}} separator=">">
+          <Breadcrumb.Item><Link to={'/files/'}>Home</Link></Breadcrumb.Item>
+          <Breadcrumb.Item>Search Results</Breadcrumb.Item>
+        </Breadcrumb>
+      )
     }
     return null
   }
 }
 
+@connect(createStructuredSelector({
+  search: searchSelector,
+}), {
+  send,
+  setSearch,
+  clearSearchResults,
+})
 class Home extends Component {
+  handleSearch = (e) => {
+    this.props.setSearch(e.target.value)
+    this.props.clearSearchResults()
+    this.props.send(API_ACTIONS.SEARCH, {
+      path:   [],
+      regexp: e.target.value,
+    })
+    if (e.target.value) {
+      navigate('/search')
+    } else {
+      navigate('/')
+    }
+  }
+
   render() {
     return (
       <Layout className="layout home">
@@ -63,6 +93,8 @@ class Home extends Component {
           <Input
             placeholder="Search"
             className="search"
+            value={this.props.search}
+            onChange={this.handleSearch}
             prefix={<Icon type="search" style={{color: 'rgba(0,0,0,.25)'}}/>}
           />
         </Header>
@@ -72,6 +104,10 @@ class Home extends Component {
             <Switch>
               <Route path="/files/*" component={FileTree} exact={false}/>
               <Route path="/view" component={FileView} exact={true}/>
+              <Route path="/search" component={SearchView} exact={true}/>
+              <Redirect to={{
+                pathname: '/files/',
+              }}/>}/>
             </Switch>
           </div>
         </Content>

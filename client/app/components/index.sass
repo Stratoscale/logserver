@@ -1,4 +1,9 @@
 .home
+  .ant-breadcrumb
+    height: 31px
+    line-height: 31px
+    .ant-breadcrumb-link
+      line-height: normal
   .logo
     color: white
     font-size: 24px
@@ -11,8 +16,14 @@
   .file
     a
       margin: 0 5px
-
+  .line
+    font-family: monospace
+    &.error
+      color: darkred
   .tree-search
     border: none
     padding: 5px
-    background: rgba(0,0,0,0.05)
+    background: rgba(0, 0, 0, 0.05)
+  .lines-view
+    max-height: 80vh
+    overflow-y: scroll

@@ -1,11 +1,11 @@
 import {Component} from 'react'
 import {connect} from 'react-redux'
-import {setContent, setFiles, socketReady} from 'sockets/socket-actions'
+import {addSearchResults, setContent, setFiles, socketReady} from 'sockets/socket-actions'
 import {API_ACTIONS} from 'consts'
 
 let socket = null
 
-@connect(null, {socketReady, setFiles, setContent})
+@connect(null, {socketReady, setFiles, setContent, addSearchResults})
 export default class SocketContainer extends Component {
   constructor(props) {
     super(props)
@@ -28,10 +28,16 @@ export default class SocketContainer extends Component {
         switch (meta.action) {
           case API_ACTIONS.GET_FILE_TREE: {
             this.props.setFiles(payload.tree)
-            break;
+            break
           }
           case API_ACTIONS.GET_CONTENT: {
-            this.props.setContent(payload.lines)
+            this.props.setContent(payload.lines, meta.id)
+            break
+          }
+          case API_ACTIONS.SEARCH: {
+            if (payload.lines) {
+              this.props.addSearchResults(payload.lines, meta.id)
+            }
             break
           }
           default: {

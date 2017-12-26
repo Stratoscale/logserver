@@ -2,7 +2,10 @@ import {createReducer} from 'redux-immutablejs'
 import {fromJS, Map, List} from 'immutable'
 import {ACTIONS} from 'consts'
 
-const INITIAL_STATE = fromJS({})
+const INITIAL_STATE = fromJS({
+  tree:  {},
+  index: {},
+})
 
 export function setFiles(state = Map(), {payload}) {
   if (!payload) {
@@ -12,9 +15,10 @@ export function setFiles(state = Map(), {payload}) {
     payload.forEach(_file => {
       const file = fromJS(_file)
       const path = file.get('path', List())
-      state.updateIn(path.butLast(), (node = Map()) => {
+      state.updateIn(path.unshift('tree').butLast(), (node = Map()) => {
         return node.mergeIn(['files', file.get('key')], file)
       })
+      state.setIn(['index', file.get('key')], file)
     })
   })
 }
