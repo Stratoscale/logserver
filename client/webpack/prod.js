@@ -33,7 +33,7 @@ module.exports = {
   entry:         common.entry,
   output:        {
     path:              common.DIST_PATH,
-    publicPath:        common.outputUrl,
+    publicPath:        '',
     filename:          '[chunkhash].[name].js',
     sourceMapFilename: '[file].map',
   },

@@ -30,6 +30,11 @@ export function setContent(payload, id) {
 export function setFilter(payload) {
   return {
     type: ACTIONS.SET_FILTER,
+    meta: {
+      debounce: {
+        time: 100,
+      },
+    },
     payload,
   }
 }
