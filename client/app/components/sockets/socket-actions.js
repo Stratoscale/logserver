@@ -75,7 +75,7 @@ export function setContentId(id) {
 }
 
 export function send(action, data) {
-  return (dispatch, getState) => {
+  const thunk = (dispatch, getState) => {
     const id = messageId++
     if (action === API_ACTIONS.SEARCH) {
       dispatch(setSearchId(id))
@@ -92,4 +92,13 @@ export function send(action, data) {
       })
     )
   }
+  thunk.meta  = {
+    debounce: {
+      time: 300,
+      key:  'send-' + action,
+    },
+  }
+
+  return thunk
+
 }

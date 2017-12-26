@@ -23,7 +23,7 @@ class SearchView extends Component {
 
     return (
       <div>
-        <LinesView lines={results.toJS()}/>
+        <LinesView lines={results}/>
       </div>
     )
   }

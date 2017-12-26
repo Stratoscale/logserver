@@ -79,6 +79,7 @@
     "redbox-react": "^1.5.0",
     "redux": "^3.7.0",
     "redux-batched-subscribe": "^0.1.4",
+    "redux-debounced": "^0.4.0",
     "redux-immutablejs": "0.0.7",
     "redux-thunk": "^1.0.1",
     "reselect": "^2.0.1",
