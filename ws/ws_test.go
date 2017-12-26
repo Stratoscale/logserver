@@ -85,3 +85,7 @@ func (vfs) Lstat(name string) (os.FileInfo, error) {
 func (vfs) Join(elem ...string) string {
 	return filepath.Join(elem...)
 }
+
+func (vfs) Close() error {
+	return nil
+}

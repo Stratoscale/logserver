@@ -3,28 +3,33 @@ package filesystem
 import (
 	"io"
 	"io/ioutil"
+	"log"
 	"net/url"
 	"os"
 	"path/filepath"
 )
 
 type LocalFS struct {
-	BaseFS
+	basePath string
 }
 
 func NewLocalFS(u *url.URL) (*LocalFS, error) {
-	fs := new(LocalFS)
-	fs.Url = u
-	_, err := fs.ReadDir("")
-	return fs, err
+	fs := &LocalFS{
+		basePath: u.Path,
+	}
+	if _, err := fs.ReadDir(""); err != nil {
+		return nil, err
+	}
+	log.Printf("Opened local: %s", fs.basePath)
+	return fs, nil
 }
 
 func (f *LocalFS) ReadDir(dirname string) ([]os.FileInfo, error) {
-	return ioutil.ReadDir(filepath.Join(f.Url.Path, dirname))
+	return ioutil.ReadDir(filepath.Join(f.basePath, dirname))
 }
 
 func (f *LocalFS) Lstat(name string) (os.FileInfo, error) {
-	return os.Lstat(filepath.Join(f.Url.Path, name))
+	return os.Lstat(filepath.Join(f.basePath, name))
 }
 
 func (f *LocalFS) Join(elem ...string) string {
@@ -32,7 +37,7 @@ func (f *LocalFS) Join(elem ...string) string {
 }
 
 func (f *LocalFS) Open(name string) (io.ReadCloser, error) {
-	return os.Open(filepath.Join(f.Url.Path, name))
+	return os.Open(filepath.Join(f.basePath, name))
 }
 
 func (f *LocalFS) Close() error {
