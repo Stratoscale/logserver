@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	defaultContentBatchSize = 20
+	defaultContentBatchSize = 200
 )
 
 // Config is configuration for logserver handler
