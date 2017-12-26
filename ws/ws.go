@@ -125,7 +125,6 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 					})
 					m[key] = fsElements[len(fsElements)-1]
 				}
-				log.Printf("XXX %s -> %s", key, node.Name)
 				m[key].Instances = append(m[key].Instances, FileInstance{
 					Size: walker.Stat().Size(),
 					FS:   node.Name,
@@ -191,7 +190,6 @@ func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, p
 		return
 	}
 	if stat.IsDir() {
-		log.Printf("Is a dir %s", path)
 		return
 	}
 

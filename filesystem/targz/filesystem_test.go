@@ -14,20 +14,16 @@ import (
 )
 
 func Test_wrapper(t *testing.T) {
-	fmt.Println("bp5")
 	cwd, err := os.Getwd()
 	require.Nil(t, err)
 	_url := fmt.Sprintf("file://%s/../../example/log3", cwd)
 	parsedUrl, err := url.Parse(_url)
 	require.Nil(t, err)
-	fmt.Println("bp6")
 	var fs filesystem.FileSystem
 	fs, err = filesystem.NewLocalFS(parsedUrl)
-	fmt.Println("bp7")
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("bp8")
 	fs = New(fs)
 	tests := []struct {
 		path        string
