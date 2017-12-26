@@ -60,6 +60,8 @@ func router(cfg config.Config) http.Handler {
 
 	r := mux.NewRouter()
 	r.Methods(http.MethodGet).Path("/ws").Handler(ws.New(cfg))
+	r.Methods(http.MethodGet).PathPrefix("/files").Handler(http.StripPrefix("/files", http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "./client/dist/index.html") })))
 	r.Methods(http.MethodGet).PathPrefix("/").Handler(static)
 	return r
 }

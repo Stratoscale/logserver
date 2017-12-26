@@ -2,20 +2,14 @@ package ws
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"net/http"
-	"path/filepath"
-	"sync"
-
-	"regexp"
-
-	"fmt"
-
-<<<<<<< HEAD
-=======
 	"os"
->>>>>>> xxx
+	"path/filepath"
+	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/Stratoscale/logserver/config"
 	"github.com/Stratoscale/logserver/parser"
@@ -34,10 +28,10 @@ type handler struct {
 }
 
 type Metadata struct {
-	ID     int     `json:"id"`
-	Action string  `json:"action"`
-	FS     string  `json:"fs,omitempty"`
-	Path   Path `json:"path,omitempty"`
+	ID     int    `json:"id"`
+	Action string `json:"action"`
+	FS     string `json:"fs,omitempty"`
+	Path   Path   `json:"path,omitempty"`
 }
 
 type Request struct {
@@ -110,9 +104,6 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 
 		for _, node := range h.Sources {
 			path := node.FS.Join(r.Path...)
-			if path == "" {
-				path = "/"
-			}
 			walker := fs.WalkFS(path, node.FS)
 			for walker.Step() {
 				if err := walker.Err(); err != nil {
@@ -152,9 +143,6 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 		for _, node := range h.Sources {
 			go func(node config.Source) {
 				path := node.FS.Join(r.Path...)
-				if path == "" {
-					path = "/"
-				}
 				h.read(ch, r, node, path, nil)
 				wg.Done()
 			}(node)
@@ -169,14 +157,12 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 				Error:    fmt.Sprintf("Bad regexp %s: %s", r.Regexp, err),
 			}
 		}
+
 		wg := sync.WaitGroup{}
 		wg.Add(len(h.Sources))
 		for _, node := range h.Sources {
 			go func(node config.Source) {
 				path := node.FS.Join(r.Path...)
-				if path == "" {
-					path = "/"
-				}
 				h.search(ch, r, node, path, re)
 				wg.Done()
 			}(node)
@@ -198,11 +184,14 @@ func (h *handler) search(ch chan<- interface{}, req Request, node config.Source,
 }
 
 func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, path string, re *regexp.Regexp) {
+	log.Printf("XXX %s %s", node.Name, path)
 	stat, err := node.FS.Lstat(path)
 	if err != nil {
+		log.Printf("Failed stat %s", path)
 		return
 	}
 	if stat.IsDir() {
+		log.Printf("Is a dir %s", path)
 		return
 	}
 
@@ -258,7 +247,7 @@ func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, p
 		log.Println("Scan:", err)
 		return
 	}
-	if (len(logLines) != 0 || !sentAny) && re != nil {
+	if (len(logLines) != 0 && re == nil) || !sentAny {
 		ch <- &Response{Metadata: respMeta, Lines: logLines}
 	}
 }
