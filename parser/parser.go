@@ -4,18 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 	"time"
 )
 
 type debugLevel string
 
-const (
-	levelDebug   debugLevel = "debug"
-	levelInfo    debugLevel = "info"
-	levelError   debugLevel = "error"
-	levelWarning debugLevel = "warning"
-)
+var keyword = regexp.MustCompile(`(%\(([^)]+\))[diouxXeEfFgGcrs])`)
 
 type LogLine struct {
 	Msg        string     `json:"msg"`
@@ -42,10 +38,10 @@ var parsers = map[string]Parser{
 }
 
 type stratologFormat struct {
-	Msg   string        `json:"msg"`
-	Level debugLevel    `json:"levelname"`
-	Time  float64       `json:"created"`
-	Args  []interface{} `json:"args"`
+	Msg   string      `json:"msg"`
+	Level debugLevel  `json:"levelname"`
+	Time  float64     `json:"created"`
+	Args  interface{} `json:"args"`
 }
 
 func stratologParser(line []byte) (*LogLine, error) {
@@ -59,14 +55,30 @@ func stratologParser(line []byte) (*LogLine, error) {
 	r := strings.NewReplacer("%s", "%v")
 	stratoFormat.Msg = r.Replace(stratoFormat.Msg)
 
+	msg := ""
+	switch args := stratoFormat.Args.(type) {
+	case []interface{}:
+		msg = fmt.Sprintf(stratoFormat.Msg, args...)
+	case map[string]interface{}:
+		msg = keyword.ReplaceAllStringFunc(stratoFormat.Msg, func(src string) string {
+			key := src[2 : len(src)-2]
+			val, ok := args[key]
+			if !ok {
+				return src
+			}
+			return fmt.Sprintf("%v", val)
+		})
+	}
+
 	return &LogLine{
-		Msg:   fmt.Sprintf(stratoFormat.Msg, stratoFormat.Args...),
+		Msg:   msg,
 		Level: stratoFormat.Level,
 		Time:  time.Unix(int64(stratoFormat.Time), int64(stratoFormat.Time-float64(int64(stratoFormat.Time)))).String(),
 	}, nil
 }
 
 func defaultParser(line []byte) (*LogLine, error) {
+	// TODO: try to parser time
 	return &LogLine{
 		Msg: string(line),
 	}, nil
