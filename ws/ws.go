@@ -11,6 +11,10 @@ import (
 
 	"fmt"
 
+<<<<<<< HEAD
+=======
+	"os"
+>>>>>>> xxx
 	"strings"
 
 	"github.com/Stratoscale/logserver/config"
@@ -33,34 +37,34 @@ type Metadata struct {
 	ID     int     `json:"id"`
 	Action string  `json:"action"`
 	FS     string  `json:"fs,omitempty"`
-	Path   pathArr `json:"path,omitempty"`
+	Path   Path `json:"path,omitempty"`
 }
 
 type Request struct {
 	Metadata `json:"meta"`
-	Path     pathArr `json:"path"`
-	Regexp   string  `json:"regexp"`
+	Path     Path   `json:"path"`
+	Regexp   string `json:"regexp"`
 }
 
-type pathArr []string
-
-type fsElement struct {
-	Key       string         `json:"key"`
-	Path      pathArr        `json:"path"`
-	IsDir     bool           `json:"is_dir"`
-	Instances []fileInstance `json:"instances"`
-}
-
-type fileInstance struct {
-	Size int64  `json:"size"`
-	FS   string `json:"fs"`
-}
+type Path []string
 
 type Response struct {
 	Metadata `json:"meta"`
 	Lines    []parser.LogLine `json:"lines,omitempty"`
 	Error    string           `json:"error,omitempty"`
-	Tree     []fsElement      `json:"tree,omitempty"`
+	Tree     []FSElement      `json:"tree,omitempty"`
+}
+
+type FSElement struct {
+	Key       string         `json:"key"`
+	Path      Path           `json:"path"`
+	IsDir     bool           `json:"is_dir"`
+	Instances []FileInstance `json:"instances"`
+}
+
+type FileInstance struct {
+	Size int64  `json:"size"`
+	FS   string `json:"fs"`
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -104,8 +108,8 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 	switch r.Action {
 	case "get-file-tree":
 		var (
-			fsElements []fsElement
-			m          = make(map[string]*fsElement)
+			fsElements []FSElement
+			m          = make(map[string]*FSElement)
 		)
 
 		for _, node := range h.Sources {
@@ -116,17 +120,22 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 					continue
 				}
 
-				key := walker.Path()
+				key := strings.Trim(walker.Path(), string(os.PathSeparator))
+
+				if key == "" {
+					continue
+				}
+
 				element := m[key]
 				if element == nil {
-					fsElements = append(fsElements, fsElement{
+					fsElements = append(fsElements, FSElement{
 						Key:   key,
-						Path:  filepath.SplitList(key),
+						Path:  strings.Split(key, string(os.PathSeparator)),
 						IsDir: walker.Stat().IsDir(),
 					})
 					m[key] = &fsElements[len(fsElements)-1]
 				}
-				m[key].Instances = append(m[key].Instances, fileInstance{
+				m[key].Instances = append(m[key].Instances, FileInstance{
 					Size: walker.Stat().Size(),
 					FS:   node.Name,
 				})
