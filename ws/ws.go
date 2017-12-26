@@ -101,10 +101,6 @@ func reader(conn *websocket.Conn, ch <-chan interface{}) {
 }
 
 func (h *handler) serve(ch chan<- interface{}, r Request) {
-	path := filepath.Join(r.Path...)
-	if path == "" {
-		path = "/"
-	}
 	switch r.Action {
 	case "get-file-tree":
 		var (
@@ -113,15 +109,18 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 		)
 
 		for _, node := range h.Sources {
+			path := node.FS.Join(r.Path...)
+			if path == "" {
+				path = "/"
+			}
 			walker := fs.WalkFS(path, node.FS)
 			for walker.Step() {
 				if err := walker.Err(); err != nil {
-					log.Printf("walk: %s", err)
+					log.Printf("Walk: %s", err)
 					continue
 				}
 
 				key := strings.Trim(walker.Path(), string(os.PathSeparator))
-
 				if key == "" {
 					continue
 				}
@@ -148,11 +147,14 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 		}
 
 	case "get-content":
-		fmt.Println("GET CONTENT REQUEST")
 		wg := sync.WaitGroup{}
 		wg.Add(len(h.Sources))
 		for _, node := range h.Sources {
 			go func(node config.Source) {
+				path := node.FS.Join(r.Path...)
+				if path == "" {
+					path = "/"
+				}
 				h.read(ch, r, node, path, nil)
 				wg.Done()
 			}(node)
@@ -171,6 +173,10 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 		wg.Add(len(h.Sources))
 		for _, node := range h.Sources {
 			go func(node config.Source) {
+				path := node.FS.Join(r.Path...)
+				if path == "" {
+					path = "/"
+				}
 				h.search(ch, r, node, path, re)
 				wg.Done()
 			}(node)
@@ -250,10 +256,5 @@ func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, p
 		log.Println("Scan:", err)
 		return
 	}
-	if len(logLines) > 0 {
-		ch <- &Response{Metadata: respMeta, Lines: logLines}
-	}
-	//else {
-	//	ch <- &Response{Metadata: req.Metadata, Error: "No content in this fs"}
-	//}
+	ch <- &Response{Metadata: respMeta, Lines: logLines}
 }
