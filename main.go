@@ -29,6 +29,7 @@ func init() {
 }
 
 func main() {
+	flag.Parse()
 	f, err := os.Open(options.jsonFile)
 	failOnErr(err, fmt.Sprintf("open file %s", options.jsonFile))
 	defer f.Close()

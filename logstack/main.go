@@ -25,10 +25,10 @@ func init() {
 	flag.StringVar(&options.rootPath, "root", cwd, "path to root directory")
 	flag.StringVar(&options.markFile, "mark-file", "logstack.enable", "file that marks test root")
 	flag.IntVar(&options.port, "port", 8888, "port to listen on")
-
 }
 
 func main() {
+	flag.Parse()
 	h := &handler.Config{
 		Root:     options.rootPath,
 		MarkFile: options.markFile,
