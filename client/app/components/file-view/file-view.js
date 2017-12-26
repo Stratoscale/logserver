@@ -8,8 +8,6 @@ import queryString from 'query-string'
 import {send} from 'sockets/socket-actions'
 import cn from 'classnames'
 import {API_ACTIONS} from 'consts'
-import {withLoader} from 'utils'
-
 
 @connect(createStructuredSelector({
   location: locationSelect,
@@ -33,10 +31,17 @@ class FileView extends Component {
 
   render() {
     const {content, location, files} = this.props
+    if (!content) {
+      return (
+        <div>File is empty</div>
+      )
+    }
 
     const search = queryString.parse(location.search)
-    const path   = search.file.split('/').filter(Boolean)
-    const file   = files.getIn(path.slice(0, -1).concat(['files', search.file.slice(1)]), Map())
+    const {searchFile = ''} = search
+    const path   = searchFile.split('/').filter(Boolean)
+
+    const file   = files.getIn(path.slice(0, -1).concat(['files', searchFile.slice(1)]), Map())
 
     return (
       <div>
@@ -49,4 +54,4 @@ class FileView extends Component {
   }
 }
 
-export default withLoader(FileView)
+export default FileView

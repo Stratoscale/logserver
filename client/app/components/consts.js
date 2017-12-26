@@ -5,6 +5,7 @@ export const ACTIONS = keyMirror({
   SET_FILES:        null,
   SET_CURRENT_PATH: null,
   SET_CONTENT:      null,
+  SET_FILTER:       null,
 })
 
 export const API_ACTIONS = {

@@ -20,4 +20,9 @@ export const contentSelector = createSelector(
   (app = Map()) => app.get('content')
 )
 
+export const filterSelector = createSelector(
+  appStateSelector,
+  (app = Map()) => app.get('filter')
+)
+
 export const locationSelect = (state = Map()) => state.get('router').location || {}

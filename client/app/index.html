@@ -7,7 +7,7 @@
     <link rel="shortcut icon" href="/ui/images/favicon?{%=o.htmlWebpackPlugin.options.cacheBusterQuery()%}">
     {% } %}
     {% for (var css in o.htmlWebpackPlugin.files.css) { %}
-    <a href="{%=o.htmlWebpackPlugin.files.css[css] %}" rel="stylesheet">
+    <link href="{%=o.htmlWebpackPlugin.files.css[css] %}" rel="stylesheet">
     {% } %}
 </head>
 <body>

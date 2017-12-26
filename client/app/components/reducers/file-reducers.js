@@ -5,6 +5,9 @@ import {ACTIONS} from 'consts'
 const INITIAL_STATE = fromJS({})
 
 export function setFiles(state = Map(), {payload}) {
+  if (!payload) {
+    return state
+  }
   return state.withMutations(state => {
     payload.forEach(_file => {
       const file = fromJS(_file)

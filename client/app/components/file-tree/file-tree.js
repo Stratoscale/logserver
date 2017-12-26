@@ -1,12 +1,11 @@
 import React, {Component} from 'react'
 import {Map} from 'immutable'
 import {List, Icon, Tag} from 'antd'
-import {withLoader} from 'utils'
 import {send} from 'sockets/socket-actions'
 import {API_ACTIONS} from 'consts'
 import {connect} from 'react-redux'
 import {createStructuredSelector} from 'reselect'
-import {filesSelector, locationSelect} from 'selectors'
+import {filesSelector, filterSelector, locationSelect} from 'selectors'
 import {setCurrentPath} from 'file-tree/file-actions'
 import {Link} from 'react-router-dom'
 
@@ -33,6 +32,7 @@ const File = ({path, is_dir, instances}) => {
 @connect(createStructuredSelector({
   files:    filesSelector,
   location: locationSelect,
+  filter:   filterSelector,
 }), {
   send,
   setCurrentPath,
@@ -45,17 +45,19 @@ class FileTree extends Component {
   }
 
   render() {
-    const {files, match: {params}} = this.props
+    const {files, match: {params}, filter} = this.props
 
-    const path = (params[0] || '').split('/').filter(Boolean)
+    const path         = (params[0] || '').split('/').filter(Boolean)
+    const data         = files.getIn(path.concat(['files']), Map()).valueSeq().toJS()
+    const filteredData = filter ? data.filter(file => file.key.includes(filter)) : data
 
     return (
       <List
-        dataSource={files.getIn(path.concat(['files']), Map()).valueSeq().toJS()}
+        dataSource={filteredData}
         renderItem={file => <File {...file}/>}
       />
     )
   }
 }
 
-export default withLoader(FileTree)
+export default FileTree

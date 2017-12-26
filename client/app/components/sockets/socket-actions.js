@@ -23,6 +23,13 @@ export function setContent(payload) {
   }
 }
 
+export function setFilter(payload) {
+  return {
+    type: ACTIONS.SET_FILTER,
+    payload,
+  }
+}
+
 export function send(action, data) {
   return (dispatch, getState) => {
     socket.send(JSON.stringify({

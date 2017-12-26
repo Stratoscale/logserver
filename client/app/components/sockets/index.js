@@ -13,7 +13,8 @@ export default class SocketContainer extends Component {
 
   componentWillMount() {
     if (!socket) {
-      socket = new WebSocket('ws://localhost:8080/ws')
+
+      socket = new WebSocket(`ws://${window.location.host}/ws`)
 
       // Connection opened
       socket.addEventListener('open', (event) => {
@@ -30,7 +31,7 @@ export default class SocketContainer extends Component {
             break;
           }
           case API_ACTIONS.GET_CONTENT: {
-            this.props.setContent(payload.line)
+            this.props.setContent(payload.lines)
             break
           }
           default: {
