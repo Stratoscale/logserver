@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/Stratoscale/logserver/config"
 	"github.com/Stratoscale/logserver/router"
-	"github.com/sirupsen/logrus"
 )
 
 var log = logrus.WithField("pkg", "main")

@@ -4,9 +4,9 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/Stratoscale/logserver/filesystem"
 	"github.com/Stratoscale/logserver/filesystem/targz"
-	"github.com/sirupsen/logrus"
 )
 
 var log = logrus.WithField("pkg", "config")

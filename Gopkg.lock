@@ -2,6 +2,18 @@
 
 
 [[projects]]
+  name = "github.com/Sirupsen/logrus"
+  packages = ["."]
+  revision = "d682213848ed68c0a260ca37d6dd5ace8423f5ba"
+  version = "v1.0.4"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/bakins/logrus-middleware"
+  packages = ["."]
+  revision = "2f037bcda984f172af9c62c9048a5e6c12fa3179"
+
+[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
@@ -56,26 +68,8 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/posener/wstest"
-  packages = [".","pipe"]
-  revision = "a9f917d6b1498ca5dc74585e4cc1aff4be765092"
-
-[[projects]]
-  name = "github.com/sirupsen/logrus"
-  packages = ["."]
-  revision = "d682213848ed68c0a260ca37d6dd5ace8423f5ba"
-  version = "v1.0.4"
-
-[[projects]]
-  name = "github.com/stretchr/objx"
-  packages = ["."]
-  revision = "facf9a85c22f48d2f52f2380e4efce1768749a89"
-  version = "v0.1"
-
-[[projects]]
   name = "github.com/stretchr/testify"
-  packages = ["assert","mock","require"]
+  packages = ["assert","require"]
   revision = "b91bfb9ebec76498946beb6af7c0230c7cc7ba6c"
   version = "v1.2.0"
 
@@ -100,6 +94,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d96a2c5ab4980c4b0dcc7db43e1e428d306326eb6597f139d0a26254292c4ff7"
+  inputs-digest = "585e9a765b036d3618f682e48040766dd6cad66578a7e84c61357a1a441c7d98"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -6,9 +6,10 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/Stratoscale/logserver/logstack/handler"
+	"github.com/bakins/logrus-middleware"
 	"github.com/gorilla/handlers"
-	"github.com/sirupsen/logrus"
 )
 
 var log = logrus.WithField("pkg", "main")
@@ -43,7 +44,8 @@ func main() {
 		MarkFile: options.markFile,
 	}
 
-	h = handlers.LoggingHandler(logger{}, h)
+	logMW := logrusmiddleware.Middleware{Logger: log.Logger}
+	h = logMW.Handler(handlers.LoggingHandler(logger{}, h), "")
 
 	log.Infof("serving on http://localhost:%d", options.port)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", options.port), h)

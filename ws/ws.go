@@ -12,11 +12,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/Stratoscale/logserver/config"
 	"github.com/Stratoscale/logserver/parser"
 	"github.com/gorilla/websocket"
 	"github.com/kr/fs"
-	"github.com/sirupsen/logrus"
 )
 
 var log = logrus.WithField("pkg", "ws")

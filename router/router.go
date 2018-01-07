@@ -4,14 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
-	"os"
 	"text/template"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/Stratoscale/logserver/config"
 	"github.com/Stratoscale/logserver/ws"
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -21,7 +19,7 @@ var (
 
 func New(cfg config.Config) (http.Handler, error) {
 	var (
-		static = handlers.LoggingHandler(os.Stderr, http.FileServer(http.Dir("./client/dist")))
+		static = http.FileServer(http.Dir("./client/dist"))
 	)
 	index := bytes.NewBuffer(nil)
 	if err := indexTemplate.Execute(index, &cfg); err != nil {
@@ -42,7 +40,7 @@ func New(cfg config.Config) (http.Handler, error) {
 	r.Methods(http.MethodGet).PathPrefix("/files").Handler(http.StripPrefix("/files", serveIndex))
 	r.Methods(http.MethodGet).PathPrefix("/").Handler(static)
 
-	return handlers.LoggingHandler(logger{}, r), nil
+	return r, nil
 }
 
 type logger struct{}

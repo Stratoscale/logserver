@@ -10,7 +10,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 func NewFS(r io.ReadCloser) (*FileSystem, error) {
