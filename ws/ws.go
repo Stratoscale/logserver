@@ -47,8 +47,9 @@ type Meta struct {
 // Request from client
 type Request struct {
 	Meta   `json:"meta"`
-	Path   Path   `json:"path"`
-	Regexp string `json:"regexp"`
+	Path   Path     `json:"path"`
+	Regexp string   `json:"regexp"`
+	Nodes  []string `json:"nodes"`
 }
 
 // Response from the server
@@ -121,25 +122,25 @@ func reader(conn *websocket.Conn, ch <-chan *Response) {
 	}
 }
 
-func (h *handler) serve(ctx context.Context, ch chan<- *Response, r Request) {
-	switch r.Action {
+func (h *handler) serve(ctx context.Context, ch chan<- *Response, req Request) {
+	switch req.Action {
 	case "get-file-tree":
-		h.serveTree(ctx, r, ch)
+		h.serveTree(ctx, req, ch)
 
 	case "get-content":
-		h.serveContent(ctx, r, ch)
+		h.serveContent(ctx, req, ch)
 
 	case "search":
-		h.search(ctx, r, ch)
+		h.search(ctx, req, ch)
 	}
 }
 
 func (h *handler) serveTree(ctx context.Context, req Request, ch chan<- *Response) {
 	var (
-		fsElements []*File
-		m          = make(map[string]*File)
+		files   []*File
+		fileMap = make(map[string]*File)
 	)
-	for _, node := range h.Sources {
+	for _, node := range filterNodes(h.Sources, req.Nodes) {
 		path := node.FS.Join(req.Path...)
 		walker := fs.WalkFS(path, node.FS)
 		for walker.Step() {
@@ -157,29 +158,30 @@ func (h *handler) serveTree(ctx context.Context, req Request, ch chan<- *Respons
 				continue
 			}
 
-			element := m[key]
+			element := fileMap[key]
 			if element == nil {
-				fsElements = append(fsElements, &File{
+				files = append(files, &File{
 					Key:   key,
 					Path:  strings.Split(key, string(os.PathSeparator)),
 					IsDir: walker.Stat().IsDir(),
 				})
-				m[key] = fsElements[len(fsElements)-1]
+				fileMap[key] = files[len(files)-1]
 			}
-			m[key].Instances = append(m[key].Instances, FileInstance{
+			fileMap[key].Instances = append(fileMap[key].Instances, FileInstance{
 				Size: walker.Stat().Size(),
 				FS:   node.Name,
 			})
 		}
 	}
 	// reply
-	ch <- &Response{Meta: req.Meta, Tree: fsElements}
+	ch <- &Response{Meta: req.Meta, Tree: files}
 }
 
 func (h *handler) serveContent(ctx context.Context, req Request, ch chan<- *Response) {
 	wg := sync.WaitGroup{}
-	wg.Add(len(h.Sources))
-	for _, node := range h.Sources {
+	nodes := filterNodes(h.Sources, req.Nodes)
+	wg.Add(len(nodes))
+	for _, node := range nodes {
 		go func(node config.Source) {
 			defer wg.Done()
 			path := node.FS.Join(req.Path...)
@@ -198,9 +200,10 @@ func (h *handler) search(ctx context.Context, req Request, ch chan<- *Response) 
 		}
 		return
 	}
+	nodes := filterNodes(h.Sources, req.Nodes)
 	wg := sync.WaitGroup{}
-	wg.Add(len(h.Sources))
-	for _, node := range h.Sources {
+	wg.Add(len(nodes))
+	for _, node := range nodes {
 		go func(node config.Source) {
 			defer wg.Done()
 			path := node.FS.Join(req.Path...)
@@ -308,4 +311,21 @@ func (h *handler) read(ctx context.Context, ch chan<- *Response, req Request, no
 		return
 	}
 	ch <- &Response{Meta: respMeta, Lines: logLines}
+}
+
+func filterNodes(sources []config.Source, filterNodes []string) []config.Source {
+	if len(filterNodes) == 0 {
+		return sources
+	}
+	nodes := make(map[string]bool, len(filterNodes))
+	for _, node := range filterNodes {
+		nodes[node] = true
+	}
+	ret := make([]config.Source, 0, len(filterNodes))
+	for _, src := range sources {
+		if nodes[src.Name] {
+			ret = append(ret, src)
+		}
+	}
+	return ret
 }

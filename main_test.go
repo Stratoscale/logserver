@@ -62,6 +62,16 @@ func TestWS(t *testing.T) {
 			},
 		},
 		{
+			name:    "search / filter node",
+			message: `{"meta":{"action":"search","id":9},"path":[], "regexp": "2d03c436-c197-464f-9ad0-d861e650cd61", "nodes": ["node1"]}`,
+			want: ws.Response{
+				Meta: ws.Meta{ID: 9, Action: "search", FS: "node1", Path: ws.Path{"mancala.stratolog"}},
+				Lines: []parser.LogLine{
+					{Msg: "data disk <disk: hostname=stratonode2.node.strato, ID=2d03c436-c197-464f-9ad0-d861e650cd61, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "mancala.stratolog", LineNumber: 2, Offset: 699},
+				},
+			},
+		},
+		{
 			name:    "search regexp",
 			message: `{"meta":{"action":"search","id":9},"path":[], "regexp": "2d03c436-[c197]+-464f-9ad0-d861e650cd61"}`,
 			want: ws.Response{
@@ -72,7 +82,7 @@ func TestWS(t *testing.T) {
 			},
 		},
 		{
-			name:    "get-file-tree",
+			name:    "get file tree",
 			message: `{"meta":{"action":"get-file-tree","id":9},"base_path":[]}`,
 			want: ws.Response{
 				Meta: ws.Meta{ID: 9, Action: "get-file-tree"},
@@ -109,6 +119,21 @@ func TestWS(t *testing.T) {
 						Path:      ws.Path{"service2.log"},
 						IsDir:     false,
 						Instances: []ws.FileInstance{{Size: 0, FS: "node1"}},
+					},
+				},
+			},
+		},
+		{
+			name:    "get file tree/filter node",
+			message: `{"meta":{"action":"get-file-tree","id":9},"base_path":[], "nodes": ["node2"]}`,
+			want: ws.Response{
+				Meta: ws.Meta{ID: 9, Action: "get-file-tree"},
+				Tree: []*ws.File{
+					{
+						Key:       "service1.log",
+						Path:      ws.Path{"service1.log"},
+						IsDir:     false,
+						Instances: []ws.FileInstance{{Size: 0, FS: "node2"}},
 					},
 				},
 			},
