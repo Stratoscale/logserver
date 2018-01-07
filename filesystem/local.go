@@ -3,7 +3,6 @@ package filesystem
 import (
 	"io"
 	"io/ioutil"
-	"log"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -20,7 +19,6 @@ func NewLocalFS(u *url.URL) (*LocalFS, error) {
 	if _, err := fs.ReadDir(""); err != nil {
 		return nil, err
 	}
-	log.Printf("Opened local: %s", fs.basePath)
 	return fs, nil
 }
 

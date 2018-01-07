@@ -4,13 +4,15 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 
 	"github.com/Stratoscale/logserver/config"
 	"github.com/Stratoscale/logserver/router"
+	"github.com/sirupsen/logrus"
 )
+
+var log = logrus.StandardLogger().WithField("pkg", "main")
 
 const (
 	defaultConfig = "logserver.json"
@@ -42,7 +44,7 @@ func main() {
 
 	defer c.CloseSources()
 
-	log.Printf("serving on http://localhost:%d", options.port)
+	log.Infof("serving on http://localhost:%d", options.port)
 	err = http.ListenAndServe(fmt.Sprintf(":%d", options.port), router.New(*c))
 	failOnErr(err, "serving")
 }

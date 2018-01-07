@@ -3,12 +3,15 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 
 	"github.com/Stratoscale/logserver/logstack/handler"
+	"github.com/gorilla/handlers"
+	"github.com/sirupsen/logrus"
 )
+
+var log = logrus.StandardLogger().WithField("pkg", "main")
 
 var options struct {
 	rootPath string
@@ -26,14 +29,23 @@ func init() {
 	flag.IntVar(&options.port, "port", 8889, "port to listen on")
 }
 
+type logger struct{}
+
+func (logger) Write(p []byte) (n int, err error) {
+	log.Debugf(string(p))
+	return len(p), nil
+}
+
 func main() {
 	flag.Parse()
-	h := &handler.Config{
+	var h http.Handler = &handler.Config{
 		Root:     options.rootPath,
 		MarkFile: options.markFile,
 	}
 
-	log.Printf("serving on http://localhost:%d", options.port)
+	h = handlers.LoggingHandler(logger{}, h)
+
+	log.Infof("serving on http://localhost:%d", options.port)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", options.port), h)
 	if err != nil {
 		panic(err)

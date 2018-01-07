@@ -3,7 +3,6 @@ package parser
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -48,7 +47,6 @@ func stratologParser(line []byte) (*LogLine, error) {
 	var stratoFormat stratologFormat
 	err := json.Unmarshal(line, &stratoFormat)
 	if err != nil {
-		log.Printf("Failed to pars line: %s", line)
 		return nil, err
 	}
 

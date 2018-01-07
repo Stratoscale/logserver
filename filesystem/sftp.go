@@ -3,7 +3,6 @@ package filesystem
 import (
 	"fmt"
 	"io"
-	"log"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -41,8 +40,6 @@ func NewSFTP(u *url.URL) (*SFTP, error) {
 		return nil, fmt.Errorf("create sftp client: %s", err)
 	}
 	basePath := u.Path
-
-	log.Printf("Opened local: %s", basePath)
 	return &SFTP{
 		client:   client,
 		basePath: basePath,

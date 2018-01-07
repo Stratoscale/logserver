@@ -1,12 +1,14 @@
 package config
 
 import (
-	"log"
 	"net/url"
 
 	"github.com/Stratoscale/logserver/filesystem"
 	"github.com/Stratoscale/logserver/filesystem/targz"
+	"github.com/sirupsen/logrus"
 )
+
+var log = logrus.StandardLogger().WithField("pkg", "config")
 
 const (
 	defaultContentBatchSize = 200
@@ -63,6 +65,7 @@ func New(fc FileConfig) (*Config, error) {
 		if err != nil {
 			return nil, err
 		}
+		log.Infof("Opened %s", u)
 		if srcDesc.OpenTarFiles {
 			fs = targz.New(fs)
 		}
@@ -80,7 +83,7 @@ func (c *Config) CloseSources() {
 	for _, src := range c.Sources {
 		err := src.FS.Close()
 		if err != nil {
-			log.Printf("Closing source %s", src.Name)
+			log.WithError(err).Errorf("Failed closing source %s", src.Name)
 		}
 	}
 }

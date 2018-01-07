@@ -3,7 +3,6 @@ package ws
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -15,8 +14,12 @@ import (
 	"github.com/Stratoscale/logserver/parser"
 	"github.com/gorilla/websocket"
 	"github.com/kr/fs"
+	"github.com/sirupsen/logrus"
 )
 
+var log = logrus.StandardLogger().WithField("pkg", "ws")
+
+// New returns a new websocket handler
 func New(c config.Config) http.Handler {
 	return &handler{
 		Config: c,
@@ -27,46 +30,54 @@ type handler struct {
 	config.Config
 }
 
-type Metadata struct {
+// Path describes a file path
+// Each directory or file is an item in the slice
+type Path []string
+
+// Meta is request/response metadata
+type Meta struct {
 	ID     int    `json:"id"`
 	Action string `json:"action"`
 	FS     string `json:"fs,omitempty"`
 	Path   Path   `json:"path,omitempty"`
 }
 
+// Request from client
 type Request struct {
-	Metadata `json:"meta"`
-	Path     Path   `json:"path"`
-	Regexp   string `json:"regexp"`
+	Meta   `json:"meta"`
+	Path   Path   `json:"path"`
+	Regexp string `json:"regexp"`
 }
 
-type Path []string
-
+// Response from the server
 type Response struct {
-	Metadata `json:"meta"`
-	Lines    []parser.LogLine `json:"lines,omitempty"`
-	Error    string           `json:"error,omitempty"`
-	Tree     []*FSElement     `json:"tree,omitempty"`
+	Meta  `json:"meta"`
+	Lines []parser.LogLine `json:"lines,omitempty"`
+	Tree  []*File          `json:"tree,omitempty"`
+	Error string           `json:"error,omitempty"`
 }
 
-type FSElement struct {
-	Key       string         `json:"key"`
-	Path      Path           `json:"path"`
-	IsDir     bool           `json:"is_dir"`
+// File describes a file in multiple file systems
+type File struct {
+	Key   string `json:"key"`
+	Path  Path   `json:"path"`
+	IsDir bool   `json:"is_dir"`
+	// Instances are all the instances of the same file in different file systems
 	Instances []FileInstance `json:"instances"`
 }
 
+// FileInstance describe a file on a filesystem
 type FileInstance struct {
 	Size int64  `json:"size"`
 	FS   string `json:"fs"`
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Got ws Request from: %s", r.RemoteAddr)
+	log.Debugf("Got ws Request from: %s", r.RemoteAddr)
 	u := new(websocket.Upgrader)
 	conn, err := u.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Errorf("Failed upgrade from %s", r.RemoteAddr)
 		return
 	}
 
@@ -78,7 +89,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		var r Request
 		err = conn.ReadJSON(&r)
 		if err != nil {
-			log.Printf("read: %s", err)
+			log.WithError(err).Errorf("Failed read")
 			return
 		}
 		go h.serve(ch, r)
@@ -98,8 +109,8 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 	switch r.Action {
 	case "get-file-tree":
 		var (
-			fsElements []*FSElement
-			m          = make(map[string]*FSElement)
+			fsElements []*File
+			m          = make(map[string]*File)
 		)
 
 		for _, node := range h.Sources {
@@ -107,7 +118,7 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 			walker := fs.WalkFS(path, node.FS)
 			for walker.Step() {
 				if err := walker.Err(); err != nil {
-					log.Printf("Walk: %s", err)
+					log.WithError(err).Errorf("Failed walk %s:%s", node.Name, path)
 					continue
 				}
 
@@ -118,7 +129,7 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 
 				element := m[key]
 				if element == nil {
-					fsElements = append(fsElements, &FSElement{
+					fsElements = append(fsElements, &File{
 						Key:   key,
 						Path:  strings.Split(key, string(os.PathSeparator)),
 						IsDir: walker.Stat().IsDir(),
@@ -133,8 +144,8 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 		}
 		// reply
 		ch <- &Response{
-			Metadata: r.Metadata,
-			Tree:     fsElements,
+			Meta: r.Meta,
+			Tree: fsElements,
 		}
 
 	case "get-content":
@@ -153,8 +164,8 @@ func (h *handler) serve(ch chan<- interface{}, r Request) {
 		re, err := regexp.Compile(r.Regexp)
 		if err != nil {
 			ch <- &Response{
-				Metadata: r.Metadata,
-				Error:    fmt.Sprintf("Bad regexp %s: %s", r.Regexp, err),
+				Meta:  r.Meta,
+				Error: fmt.Sprintf("Bad regexp %s: %s", r.Regexp, err),
 			}
 		}
 
@@ -175,7 +186,7 @@ func (h *handler) search(ch chan<- interface{}, req Request, node config.Source,
 	var walker = fs.WalkFS(path, node.FS)
 	for walker.Step() {
 		if err := walker.Err(); err != nil {
-			log.Printf("Walk: %s", err)
+			log.WithError(err).Errorf("Failed walk %s:%s", node.Name, path)
 			continue
 		}
 		filePath := walker.Path()
@@ -184,9 +195,10 @@ func (h *handler) search(ch chan<- interface{}, req Request, node config.Source,
 }
 
 func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, path string, re *regexp.Regexp) {
+	log := log.WithField("path", fmt.Sprintf("%s:%s", node.Name, path))
 	stat, err := node.FS.Lstat(path)
 	if err != nil {
-		log.Printf("Failed stat %s", path)
+		log.WithError(err).Error("Failed stat")
 		return
 	}
 	if stat.IsDir() {
@@ -195,7 +207,7 @@ func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, p
 
 	r, err := node.FS.Open(path)
 	if err != nil {
-		log.Printf("Open %s: %s", path, err)
+		log.WithError(err).Error("Failed open")
 		return
 	}
 	defer r.Close()
@@ -206,7 +218,7 @@ func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, p
 		logLines   []parser.LogLine
 		lineNumber = 1
 		fileOffset = 0
-		respMeta   = Metadata{ID: req.Metadata.ID, Action: req.Metadata.Action, FS: node.Name, Path: strings.Split(path, "/")}
+		respMeta   = Meta{ID: req.Meta.ID, Action: req.Meta.Action, FS: node.Name, Path: strings.Split(path, "/")}
 		sentAny    = false
 	)
 
@@ -237,16 +249,16 @@ func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, p
 		// if we read lines more than the defined batch size, send them to the client and continue
 		if len(logLines) > h.Config.ContentBatchSize {
 			sentAny = true
-			ch <- &Response{Metadata: respMeta, Lines: logLines}
+			ch <- &Response{Meta: respMeta, Lines: logLines}
 			logLines = nil
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		log.Println("Scan:", err)
+		log.WithError(err).Errorf("Failed scan")
 		return
 	}
 	if len(logLines) == 0 && !sentAny {
 		return
 	}
-	ch <- &Response{Metadata: respMeta, Lines: logLines}
+	ch <- &Response{Meta: respMeta, Lines: logLines}
 }
