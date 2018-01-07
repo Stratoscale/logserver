@@ -3,9 +3,9 @@ package router
 import (
 	"bytes"
 	"fmt"
-	"html/template"
 	"net/http"
 	"os"
+	"text/template"
 
 	"github.com/Stratoscale/logserver/config"
 	"github.com/Stratoscale/logserver/ws"
