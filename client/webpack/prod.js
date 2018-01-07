@@ -4,7 +4,6 @@ const webpack                 = require('webpack');
 const ExtractTextPlugin       = require('extract-text-webpack-plugin');
 const HtmlWebpackPlugin       = require('html-webpack-plugin');
 const ProgressBarPlugin       = require('progress-bar-webpack-plugin');
-const AssetsPlugin            = require('assets-webpack-plugin');
 const OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 const common                  = require('./common')();
 
@@ -33,7 +32,7 @@ module.exports = {
   entry:         common.entry,
   output:        {
     path:              common.DIST_PATH,
-    publicPath:        '',
+    publicPath:        process.env.BASEPATH || '/',
     filename:          '[chunkhash].[name].js',
     sourceMapFilename: '[file].map',
   },
@@ -71,42 +70,5 @@ module.exports = {
       chunks: ['app'],
     })),
     new OptimizeCssAssetsPlugin(),
-    new AssetsPlugin({
-      path:          path.resolve(common.ROOT_PATH, 'dist'),
-      filename:      'manifest.json',
-      processOutput: function (assets) {
-        const result = {
-          js:  [],
-          css: [],
-        };
-        _.forEach(assets, function (asset, key) {
-          if (key === 'loader' || key === 'ui-loader') {
-            return
-          }
-          if (asset.js) {
-            result.js.push(asset.js);
-          }
-          if (asset.css) {
-            result.css.push(asset.css);
-          }
-        });
-        return JSON.stringify(result);
-      },
-    }),
-    new AssetsPlugin({
-      path:          path.resolve(common.ROOT_PATH, 'dist'),
-      filename:      'loader-manifest.json',
-      processOutput: function (assets) {
-        const result = {
-          file: '',
-        };
-        _.forEach(assets, function (asset, key) {
-          if (key === 'ui-loader') {
-            result.file = asset.js;
-          }
-        });
-        return JSON.stringify(result);
-      },
-    }),
   ],
 };
