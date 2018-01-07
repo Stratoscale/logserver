@@ -46,10 +46,16 @@ type Meta struct {
 
 // Request from client
 type Request struct {
-	Meta   `json:"meta"`
-	Path   Path     `json:"path"`
-	Regexp string   `json:"regexp"`
-	FSs    []string `json:"filter_fs"`
+	Meta       `json:"meta"`
+	Path       Path      `json:"path"`
+	Regexp     string    `json:"regexp"`
+	FilterFS   []string  `json:"filter_fs"`
+	FilterTime TimeRange `json:"filter_time"`
+}
+
+type TimeRange struct {
+	Start *time.Time `json:"start"`
+	End   *time.Time `json:"end"`
 }
 
 // Response from the server
@@ -140,7 +146,7 @@ func (h *handler) serveTree(ctx context.Context, req Request, ch chan<- *Respons
 		files   []*File
 		fileMap = make(map[string]*File)
 	)
-	for _, node := range filterNodes(h.Sources, req.FSs) {
+	for _, node := range filterNodes(h.Sources, req.FilterFS) {
 		path := node.FS.Join(req.Path...)
 		walker := fs.WalkFS(path, node.FS)
 		for walker.Step() {
@@ -179,7 +185,7 @@ func (h *handler) serveTree(ctx context.Context, req Request, ch chan<- *Respons
 
 func (h *handler) serveContent(ctx context.Context, req Request, ch chan<- *Response) {
 	wg := sync.WaitGroup{}
-	nodes := filterNodes(h.Sources, req.FSs)
+	nodes := filterNodes(h.Sources, req.FilterFS)
 	wg.Add(len(nodes))
 	for _, node := range nodes {
 		go func(node config.Source) {
@@ -200,7 +206,7 @@ func (h *handler) search(ctx context.Context, req Request, ch chan<- *Response) 
 		}
 		return
 	}
-	nodes := filterNodes(h.Sources, req.FSs)
+	nodes := filterNodes(h.Sources, req.FilterFS)
 	wg := sync.WaitGroup{}
 	wg.Add(len(nodes))
 	for _, node := range nodes {
@@ -286,6 +292,10 @@ func (h *handler) read(ctx context.Context, ch chan<- *Response, req Request, no
 		logLine.FS = node.Name
 		logLine.LineNumber = lineNumber
 
+		if filterOutTime(logLine, req.FilterTime) {
+			continue
+		}
+
 		logLines = append(logLines, *logLine)
 		lineNumber += 1
 		fileOffset += len(scanner.Bytes())
@@ -328,4 +338,14 @@ func filterNodes(sources []config.Source, filterNodes []string) []config.Source 
 		}
 	}
 	return ret
+}
+
+func filterOutTime(line *parser.LogLine, timeRange TimeRange) bool {
+	if start := timeRange.Start; start != nil {
+		return line.Time == nil || start.After(*line.Time)
+	}
+	if end := timeRange.End; end != nil {
+		return line.Time == nil || end.Before(*line.Time)
+	}
+	return false
 }

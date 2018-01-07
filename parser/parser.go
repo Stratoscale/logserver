@@ -15,7 +15,7 @@ var keyword = regexp.MustCompile(`(%\(([^)]+\))[diouxXeEfFgGcrs])`)
 type LogLine struct {
 	Msg        string     `json:"msg"`
 	Level      debugLevel `json:"level"`
-	Time       string     `json:"time"`
+	Time       *time.Time `json:"time,omitempty"`
 	FS         string     `json:"fs"`
 	FileName   string     `json:"file_name"`
 	LineNumber int        `json:"line_number"`
@@ -36,7 +36,7 @@ var parsers = map[string]Parser{
 	".stratolog": stratologParser,
 }
 
-type stratologFormat struct {
+type stratoFormat struct {
 	Msg   string      `json:"msg"`
 	Level debugLevel  `json:"levelname"`
 	Time  float64     `json:"created"`
@@ -44,7 +44,7 @@ type stratologFormat struct {
 }
 
 func stratologParser(line []byte) (*LogLine, error) {
-	var stratoFormat stratologFormat
+	var stratoFormat stratoFormat
 	err := json.Unmarshal(line, &stratoFormat)
 	if err != nil {
 		return nil, err
@@ -68,16 +68,30 @@ func stratologParser(line []byte) (*LogLine, error) {
 		})
 	}
 
+	t := time.Unix(int64(stratoFormat.Time), int64(stratoFormat.Time-float64(int64(stratoFormat.Time))))
+
 	return &LogLine{
 		Msg:   msg,
 		Level: stratoFormat.Level,
-		Time:  time.Unix(int64(stratoFormat.Time), int64(stratoFormat.Time-float64(int64(stratoFormat.Time)))).String(),
+		Time:  &t,
 	}, nil
 }
 
 func defaultParser(line []byte) (*LogLine, error) {
-	// TODO: try to parser time
 	return &LogLine{
-		Msg: string(line),
+		Msg:  string(line),
+		Time: tryParseTime(line),
 	}, nil
+}
+func tryParseTime(b []byte) *time.Time {
+	const format = "2018-01-06 11:18:45,880"
+	var prefixLen = len([]byte(format))
+	if len(b) < prefixLen {
+		return nil
+	}
+	timePhrase := b[:prefixLen]
+	if t, err := time.Parse("2006-01-02 15:04:05.999", string(timePhrase)); err == nil {
+		return &t
+	}
+	return nil
 }

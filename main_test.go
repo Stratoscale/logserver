@@ -3,11 +3,10 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
-	"testing"
-	"time"
-
 	"sort"
 	"strings"
+	"testing"
+	"time"
 
 	"github.com/Stratoscale/logserver/config"
 	"github.com/Stratoscale/logserver/parser"
@@ -17,6 +16,14 @@ import (
 	"github.com/test-go/testify/assert"
 	"github.com/test-go/testify/require"
 )
+
+func mustParseTime(s string) *time.Time {
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		panic(err)
+	}
+	return &t
+}
 
 func TestWS(t *testing.T) {
 	cfg, err := config.New(config.FileConfig{
@@ -49,9 +56,31 @@ func TestWS(t *testing.T) {
 				{
 					Meta: ws.Meta{ID: 9, Action: "get-content", FS: "node1", Path: ws.Path{"mancala.stratolog"}},
 					Lines: []parser.LogLine{
-						{Msg: "data disk <disk: hostname=stratonode1.node.strato, ID=dce9381a-cada-434d-a1ba-4e351f4afcbb, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "mancala.stratolog", LineNumber: 1, Offset: 0},
-						{Msg: "data disk <disk: hostname=stratonode2.node.strato, ID=2d03c436-c197-464f-9ad0-d861e650cd61, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "mancala.stratolog", LineNumber: 2, Offset: 699},
-						{Msg: "data disk <disk: hostname=stratonode0.node.strato, ID=f3d510c7-1185-4942-b349-0de055165f78, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "mancala.stratolog", LineNumber: 3, Offset: 1398},
+						{
+							Msg:        "data disk <disk: hostname=stratonode1.node.strato, ID=dce9381a-cada-434d-a1ba-4e351f4afcbb, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True",
+							Level:      "INFO",
+							Time:       mustParseTime("2017-12-25T16:23:05+02:00"),
+							FS:         "node1",
+							FileName:   "mancala.stratolog",
+							LineNumber: 1,
+							Offset:     0,
+						},
+						{Msg: "data disk <disk: hostname=stratonode2.node.strato, ID=2d03c436-c197-464f-9ad0-d861e650cd61, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True",
+							Level:      "INFO",
+							Time:       mustParseTime("2017-12-25T16:23:05+02:00"),
+							FS:         "node1",
+							FileName:   "mancala.stratolog",
+							LineNumber: 2,
+							Offset:     699,
+						},
+						{Msg: "data disk <disk: hostname=stratonode0.node.strato, ID=f3d510c7-1185-4942-b349-0de055165f78, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True",
+							Level:      "INFO",
+							Time:       mustParseTime("2017-12-25T16:23:05+02:00"),
+							FS:         "node1",
+							FileName:   "mancala.stratolog",
+							LineNumber: 3,
+							Offset:     1398,
+						},
 					},
 				},
 			},
@@ -87,7 +116,14 @@ func TestWS(t *testing.T) {
 				{
 					Meta: ws.Meta{ID: 9, Action: "search", FS: "node1", Path: ws.Path{"mancala.stratolog"}},
 					Lines: []parser.LogLine{
-						{Msg: "data disk <disk: hostname=stratonode2.node.strato, ID=2d03c436-c197-464f-9ad0-d861e650cd61, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "mancala.stratolog", LineNumber: 2, Offset: 699},
+						{Msg: "data disk <disk: hostname=stratonode2.node.strato, ID=2d03c436-c197-464f-9ad0-d861e650cd61, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True",
+							Level:      "INFO",
+							Time:       mustParseTime("2017-12-25T16:23:05+02:00"),
+							FS:         "node1",
+							FileName:   "mancala.stratolog",
+							LineNumber: 2,
+							Offset:     699,
+						},
 					},
 				},
 			},
@@ -99,7 +135,14 @@ func TestWS(t *testing.T) {
 				{
 					Meta: ws.Meta{ID: 9, Action: "search", FS: "node1", Path: ws.Path{"mancala.stratolog"}},
 					Lines: []parser.LogLine{
-						{Msg: "data disk <disk: hostname=stratonode2.node.strato, ID=2d03c436-c197-464f-9ad0-d861e650cd61, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "mancala.stratolog", LineNumber: 2, Offset: 699},
+						{Msg: "data disk <disk: hostname=stratonode2.node.strato, ID=2d03c436-c197-464f-9ad0-d861e650cd61, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True",
+							Level:      "INFO",
+							Time:       mustParseTime("2017-12-25T16:23:05+02:00"),
+							FS:         "node1",
+							FileName:   "mancala.stratolog",
+							LineNumber: 2,
+							Offset:     699,
+						},
 					},
 				},
 			},
@@ -111,7 +154,14 @@ func TestWS(t *testing.T) {
 				{
 					Meta: ws.Meta{ID: 9, Action: "search", FS: "node1", Path: ws.Path{"mancala.stratolog"}},
 					Lines: []parser.LogLine{
-						{Msg: "data disk <disk: hostname=stratonode2.node.strato, ID=2d03c436-c197-464f-9ad0-d861e650cd61, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True", Level: "INFO", Time: "2017-12-25 16:23:05 +0200 IST", FS: "node1", FileName: "mancala.stratolog", LineNumber: 2, Offset: 699},
+						{Msg: "data disk <disk: hostname=stratonode2.node.strato, ID=2d03c436-c197-464f-9ad0-d861e650cd61, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True",
+							Level:      "INFO",
+							Time:       mustParseTime("2017-12-25T16:23:05+02:00"),
+							FS:         "node1",
+							FileName:   "mancala.stratolog",
+							LineNumber: 2,
+							Offset:     699,
+						},
 					},
 				},
 			},
