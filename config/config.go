@@ -17,7 +17,8 @@ const (
 // Config is configuration for logserver handler
 type Config struct {
 	GlobalConfig
-	Sources []Source
+	Sources  []Source
+	BasePath string
 }
 
 // GlobalConfig are global configuration parameter for logserver

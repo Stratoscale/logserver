@@ -49,7 +49,12 @@ func (c *Config) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	defer handlerCfg.CloseSources()
-	http.StripPrefix(root[len(c.Root):], router.New(*handlerCfg)).ServeHTTP(w, r)
+	handlerCfg.BasePath = c.Root
+	rtr, err := router.New(*handlerCfg)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	http.StripPrefix(root[len(c.Root):], rtr).ServeHTTP(w, r)
 }
 
 func (c *Config) searchRoot(path string) (string, error) {

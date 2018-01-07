@@ -198,7 +198,7 @@ func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, p
 	log := log.WithField("path", fmt.Sprintf("%s:%s", node.Name, path))
 	stat, err := node.FS.Lstat(path)
 	if err != nil {
-		log.WithError(err).Error("Failed stat")
+		// the file might not exists in all filesystem, so just return without an error
 		return
 	}
 	if stat.IsDir() {

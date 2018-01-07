@@ -45,7 +45,9 @@ func main() {
 	defer c.CloseSources()
 
 	log.Infof("serving on http://localhost:%d", options.port)
-	err = http.ListenAndServe(fmt.Sprintf(":%d", options.port), router.New(*c))
+	rtr, err := router.New(*c)
+	failOnErr(err, "creating router")
+	err = http.ListenAndServe(fmt.Sprintf(":%d", options.port), rtr)
 	failOnErr(err, "serving")
 }
 
