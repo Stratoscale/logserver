@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 
@@ -18,17 +16,17 @@ import (
 )
 
 func TestWS(t *testing.T) {
-	cwd, err := os.Getwd()
-	require.Nil(t, err)
 	cfg, err := config.New(config.FileConfig{
 		Sources: []config.SourceConfig{
-			{Name: "node1", URL: fmt.Sprintf("file://%s/example/log1", cwd)},
-			{Name: "node2", URL: fmt.Sprintf("file://%s/example/log2", cwd)},
+			{Name: "node1", URL: "file://./example/log1"},
+			{Name: "node2", URL: "file://./example/log2"},
 		},
 	})
 	require.Nil(t, err)
 
-	h := router.New(*cfg)
+	h, err := router.New(*cfg)
+	require.Nil(t, err)
+
 	s := httptest.NewServer(h)
 	defer s.Close()
 
@@ -102,7 +100,7 @@ func TestWS(t *testing.T) {
 						Path:  ws.Path{"service1.log"},
 						IsDir: false,
 						Instances: []ws.FileInstance{
-							{Size: 0, FS: "node1"},
+							{Size: 7, FS: "node1"},
 							{Size: 0, FS: "node2"},
 						},
 					},
