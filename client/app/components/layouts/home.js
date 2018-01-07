@@ -6,7 +6,6 @@ import {connect} from 'react-redux'
 import {createStructuredSelector} from 'reselect'
 import {filesSelector, locationSelect, searchSelector} from 'selectors'
 import {Link, Redirect} from 'react-router-dom'
-import FileView from 'file-view'
 import queryString from 'query-string'
 import {navigate, withLoader} from 'utils'
 import {clearSearchResults, send, setFilter, setSearch} from 'sockets/socket-actions'
@@ -101,7 +100,6 @@ class Home extends Component {
           <div style={{background: '#fff', padding: 24, minHeight: 280}}>
             <Switch>
               <Route path="/files/*" component={FileTree} exact={false}/>
-              <Route path="/view" component={FileView} exact={true}/>
               <Route path="/search" component={SearchView} exact={true}/>
               <Redirect to={{
                 pathname: '/files/',

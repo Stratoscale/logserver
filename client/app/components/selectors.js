@@ -21,6 +21,11 @@ export const contentSelector = createSelector(
   (app = Map()) => app.get('content')
 )
 
+export const fileSystemsSelector = createSelector(
+  indexSelector,
+  (index) => index.valueSeq().flatMap(file => file.get('instances', List()).map(instance => instance.get('fs'))).toSet()
+)
+
 export const filterSelector = createSelector(
   appStateSelector,
   (app = Map()) => app.get('filter')

@@ -8,6 +8,7 @@ import {createStructuredSelector} from 'reselect'
 import {filesSelector, filterSelector, indexSelector, locationSelect} from 'selectors'
 import {setCurrentPath} from 'file-tree/file-actions'
 import {Link} from 'react-router-dom'
+import FileView from 'file-view/file-view'
 
 const File = ({path, is_dir, instances, key, showFullPath = false}) => {
   const filename = showFullPath ? '/' + path.join('/') : path[path.length - 1]
@@ -18,10 +19,10 @@ const File = ({path, is_dir, instances, key, showFullPath = false}) => {
       {instances.map(instance => <Tag key={instance.fs}>{instance.fs}</Tag>)}
     </span>
   } else {
-    const viewURL = `/view?file=/${path.join('/')}`
+    const viewURL = `/files/${path.join('/')}`
     content       = <span>
       <Icon type={'file'}/> <Link to={viewURL}>{filename}</Link>
-      {instances.map(instance => <Tag key={instance.fs}><Link to={`${viewURL}&fs=${instance.fs}`}>{instance.fs}</Link></Tag>)}
+      {instances.map(instance => <Tag key={instance.fs}><Link to={`${viewURL}?fs=${instance.fs}`}>{instance.fs}</Link></Tag>)}
     </span>
   }
   return (
@@ -50,22 +51,29 @@ class FileTree extends Component {
   render() {
     const {index, files, match: {params}, filter} = this.props
 
-    const path = (params[0] || '').split('/').filter(Boolean)
-    let data   = files.getIn(path.concat(['files']), Map()).valueSeq().toJS()
-    if (filter) {
-      if (path.length) {
-        data = index.filter((value, key) => key.startsWith(path.join('/') + '/'))
-      } else {
-        data = index
+    const path  = (params[0] || '').split('/').filter(Boolean)
+    const isDir = path.length === 0 || index.getIn([...path, 'is_dir'])
+    let data
+    if (isDir) {
+      data = files.getIn(path.concat(['files']), Map()).valueSeq().toJS()
+
+      if (filter) {
+        if (path.length) {
+          data = index.filter((value, key) => key.startsWith(path.join('/') + '/'))
+        } else {
+          data = index
+        }
+        data = data.filter((value, key) => key.includes(filter)).valueSeq().toJS()
       }
-      data = data.filter((value, key) => key.includes(filter)).valueSeq().toJS()
     }
 
     return (
-      <List
-        dataSource={data}
-        renderItem={file => <File {...file} showFullPath={filter}/>}
-      />
+      isDir ?
+        <List
+          dataSource={data}
+          renderItem={file => <File {...file} showFullPath={filter}/>}
+        /> :
+        <FileView path={path}/>
     )
   }
 }

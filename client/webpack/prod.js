@@ -32,7 +32,7 @@ module.exports = {
   entry:         common.entry,
   output:        {
     path:              common.DIST_PATH,
-    publicPath:        process.env.BASEPATH || '/',
+    publicPath:        '',
     filename:          '[chunkhash].[name].js',
     sourceMapFilename: '[file].map',
   },

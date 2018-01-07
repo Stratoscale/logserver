@@ -27,6 +27,12 @@ export function setContent(payload, id) {
   }
 }
 
+export function clearContent() {
+  return {
+    type: ACTIONS.CLEAR_CONTENT,
+  }
+}
+
 export function setFilter(payload) {
   return {
     type: ACTIONS.SET_FILTER,

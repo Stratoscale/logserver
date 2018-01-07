@@ -25,7 +25,7 @@
     "eol-last": 0,
     "comma-dangle": [1, "always-multiline"],
     "quotes": [1, "single"],
-    "no-unused-vars": [1, {"vars": "local", "args": "none"}],
+    "no-unused-vars": [1, {"vars": "local", "args": "none", "varsIgnorePattern": "[_]"}],
     "jsx-quotes": 1,
     "space-before-blocks": 1,
     "react/jsx-no-undef": 1,

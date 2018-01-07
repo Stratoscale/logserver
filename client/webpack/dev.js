@@ -37,7 +37,7 @@ module.exports = {
   output:        {
     path:              common.DIST_PATH,
     pathinfo:          true,
-    publicPath:        common.outputUrl,
+    publicPath:        '',
     filename:          '[name].js',
     sourceMapFilename: '[name].map'
   },
@@ -56,6 +56,7 @@ module.exports = {
     new HtmlWebpackPlugin(_.extend({}, common.htmlWebpackPlugin, {
       chunks:   ['app', 'progress'],
       basePath: process.env.BASEPATH || '',
+      rootPath: '',
     })),
     new AssetsPlugin({
       path:     path.resolve(common.ROOT_PATH, 'dist'),

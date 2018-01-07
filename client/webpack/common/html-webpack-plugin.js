@@ -12,5 +12,6 @@ module.exports = function htmlWebpackPlugin(config, APP_PATH) {
     favicon:          path.resolve(APP_PATH, 'images', 'favico.png'),
     template:         path.resolve(APP_PATH, 'index.html'),
     basePath:         '{{ .BasePath }}', // will be replaced by the server with the actual path
+    rootPath:         '{{ .BasePath }}', // will be replaced by the server with the actual path
   }
 }

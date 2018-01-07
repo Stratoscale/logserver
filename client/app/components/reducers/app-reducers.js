@@ -55,10 +55,15 @@ export function setContent(state, {payload, meta: {id}}) {
   return state.set('content', fromJS(payload)).set('content_id', id)
 }
 
+export function clearContent(state) {
+  return state.set('content', List())
+}
+
 export const entities = createReducer(INITIAL_STATE, {
   [ACTIONS.SOCKET_READY]:       socketReady,
   [ACTIONS.SET_CURRENT_PATH]:   setCurrentPath,
   [ACTIONS.SET_CONTENT]:        setContent,
+  [ACTIONS.CLEAR_CONTENT]:      clearContent,
   [ACTIONS.SET_FILTER]:         setFilter,
   [ACTIONS.SET_SEARCH]:         setSearch,
   [ACTIONS.SET_SEARCH_ID]:      setSearchId,
