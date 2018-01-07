@@ -15,7 +15,7 @@ type LocalFS struct {
 
 func NewLocalFS(u *url.URL) (*LocalFS, error) {
 	fs := &LocalFS{
-		basePath: u.Path,
+		basePath: filepath.Join(u.Host, u.Path),
 	}
 	if _, err := fs.ReadDir(""); err != nil {
 		return nil, err

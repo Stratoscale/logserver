@@ -2,11 +2,17 @@
   "sources": [
     {
       "name": "node1",
-      "url": "file:///log1"
+      "url": "file://./example/log1"
     },
     {
       "name": "node2",
-      "url": "file:///log2"
+      "url": "file://./example/log2",
+      "open_tar_files": true
+    },
+    {
+      "name": "node3",
+      "url": "file://./example/log3",
+      "open_tar_files": true
     }
   ]
 }

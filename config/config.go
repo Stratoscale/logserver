@@ -37,8 +37,9 @@ type FileConfig struct {
 
 // SourceConfig is used to configure a filesystem source
 type SourceConfig struct {
-	Name string `json:"name"`
-	URL  string `json:"url"`
+	Name         string `json:"name"`
+	URL          string `json:"url"`
+	OpenTarFiles bool   `json:"open_tar_files"`
 }
 
 func New(fc FileConfig) (*Config, error) {
@@ -62,7 +63,9 @@ func New(fc FileConfig) (*Config, error) {
 		if err != nil {
 			return nil, err
 		}
-		fs = targz.New(fs)
+		if srcDesc.OpenTarFiles {
+			fs = targz.New(fs)
+		}
 		c.Sources = append(c.Sources, Source{srcDesc.Name, fs})
 	}
 	c.GlobalConfig = fc.Global
