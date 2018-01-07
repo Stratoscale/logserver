@@ -2,6 +2,7 @@ package ws
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -9,8 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-
-	"context"
+	"time"
 
 	"github.com/Stratoscale/logserver/config"
 	"github.com/Stratoscale/logserver/parser"
@@ -19,7 +19,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var log = logrus.StandardLogger().WithField("pkg", "ws")
+var log = logrus.WithField("pkg", "ws")
 
 // New returns a new websocket handler
 func New(c config.Config) http.Handler {
@@ -116,7 +116,7 @@ func reader(conn *websocket.Conn, ch <-chan *Response) {
 	for req := range ch {
 		err := conn.WriteJSON(req)
 		if err != nil {
-			log.Printf("write: %s", err)
+			log.WithError(err).Errorf("Failed write")
 		}
 	}
 }
@@ -245,13 +245,19 @@ func (h *handler) read(ctx context.Context, ch chan<- *Response, req Request, no
 	defer r.Close()
 
 	var (
-		pars       = parser.GetParser(filepath.Ext(path))
-		scanner    = bufio.NewScanner(r)
-		logLines   []parser.LogLine
-		lineNumber = 1
-		fileOffset = 0
-		respMeta   = Meta{ID: req.Meta.ID, Action: req.Meta.Action, FS: node.Name, Path: strings.Split(path, "/")}
-		sentAny    = false
+		pars         = parser.GetParser(filepath.Ext(path))
+		scanner      = bufio.NewScanner(r)
+		logLines     []parser.LogLine
+		lastRespTime = time.Now()
+		lineNumber   = 1
+		fileOffset   = 0
+		respMeta     = Meta{
+			ID:     req.Meta.ID,
+			Action: req.Meta.Action,
+			FS:     node.Name,
+			Path:   strings.Split(path, "/"),
+		}
+		sentAny = false
 	)
 
 	if respMeta.Path[0] == "" {
@@ -281,11 +287,17 @@ func (h *handler) read(ctx context.Context, ch chan<- *Response, req Request, no
 		lineNumber += 1
 		fileOffset += len(scanner.Bytes())
 
-		// if we read lines more than the defined batch size, send them to the client and continue
-		if len(logLines) > h.Config.ContentBatchSize {
+		// if we read lines more than the defined batch size or batch time,
+		// send them to the client and continue
+		if len(logLines) > h.Config.ContentBatchSize || time.Now().Sub(lastRespTime) > h.ContentBatchTime {
 			sentAny = true
 			ch <- &Response{Meta: respMeta, Lines: logLines}
 			logLines = nil
+			lastRespTime = time.Now()
+		}
+		// max search lines exceeded
+		if re != nil && lineNumber > h.SearchMaxSize {
+			return
 		}
 	}
 	if err := scanner.Err(); err != nil {

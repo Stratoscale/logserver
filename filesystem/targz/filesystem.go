@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 func NewFS(r io.ReadCloser) (*FileSystem, error) {
@@ -76,12 +78,11 @@ func (f *FileSystem) Join(elem ...string) string {
 }
 
 func (f *FileSystem) Open(name string) (io.ReadCloser, error) {
-	fmt.Println("tar open")
+	logrus.Infof("Opening Tar file %s", name)
 	_, err := f.Lstat(name)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("tar open")
 	return &readCloser{Reader: f.Reader, Closer: f.Closer}, nil
 }
 

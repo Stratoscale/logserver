@@ -12,7 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var log = logrus.StandardLogger().WithField("pkg", "main")
+var log = logrus.WithField("pkg", "main")
 
 const (
 	defaultConfig = "logserver.json"
