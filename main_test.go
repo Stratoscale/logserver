@@ -10,6 +10,7 @@ import (
 
 	"github.com/Stratoscale/logserver/config"
 	"github.com/Stratoscale/logserver/parser"
+	"github.com/Stratoscale/logserver/router"
 	"github.com/Stratoscale/logserver/ws"
 	"github.com/gorilla/websocket"
 	"github.com/test-go/testify/assert"
@@ -27,7 +28,7 @@ func TestWS(t *testing.T) {
 	})
 	require.Nil(t, err)
 
-	h := router(*cfg)
+	h := router.New(*cfg)
 	s := httptest.NewServer(h)
 	defer s.Close()
 

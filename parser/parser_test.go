@@ -3,8 +3,8 @@ package parser
 import (
 	"testing"
 
-	"github.com/magiconair/properties/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/test-go/testify/assert"
 )
 
 func TestParser(t *testing.T) {
