@@ -4,7 +4,7 @@ import FileTree from 'file-tree'
 import {Route, Switch} from 'react-router'
 import {connect} from 'react-redux'
 import {createStructuredSelector} from 'reselect'
-import {filesSelector, filterSelector, locationSelect, searchSelector} from 'selectors'
+import {filesSelector, locationSelect, searchSelector} from 'selectors'
 import {Link, Redirect} from 'react-router-dom'
 import FileView from 'file-view'
 import queryString from 'query-string'
@@ -18,18 +18,16 @@ const {Header, Content, Footer} = Layout
 @connect(createStructuredSelector({
   location: locationSelect,
   files:    filesSelector,
-  filter:   filterSelector,
 }), {
   setFilter,
 })
 class Breadcrumbs extends Component {
   handleChange = (e) => {
     this.props.setFilter(e.target.value)
-
   }
 
   render() {
-    const {location, files, filter} = this.props
+    const {location, files} = this.props
     if (location.pathname.startsWith('/view')) {
       const filename = queryString.parse(location.search).file
       return (
@@ -45,7 +43,7 @@ class Breadcrumbs extends Component {
           {path.map((pathPart, i) => {
             return <Breadcrumb.Item key={pathPart}><Link to={`/files/${path.slice(1, i + 1).join('/')}`}>{pathPart}</Link></Breadcrumb.Item>
           })}
-          {files.size ? <Breadcrumb.Item><input className="tree-search" placeholder="filter..." value={filter}
+          {files.size ? <Breadcrumb.Item><input className="tree-search" placeholder="filter..."
                                                 onChange={this.handleChange}/>
           </Breadcrumb.Item> : null}
         </Breadcrumb>

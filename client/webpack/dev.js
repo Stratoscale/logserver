@@ -55,7 +55,7 @@ module.exports = {
     new webpack.DefinePlugin(common.definePlugin),
     new HtmlWebpackPlugin(_.extend({}, common.htmlWebpackPlugin, {
       chunks:   ['app', 'progress'],
-      basePath: '/'
+      basePath: process.env.BASEPATH || '',
     })),
     new AssetsPlugin({
       path:     path.resolve(common.ROOT_PATH, 'dist'),
