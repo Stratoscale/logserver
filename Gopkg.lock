@@ -62,6 +62,12 @@
   revision = "a9f917d6b1498ca5dc74585e4cc1aff4be765092"
 
 [[projects]]
+  name = "github.com/sirupsen/logrus"
+  packages = ["."]
+  revision = "d682213848ed68c0a260ca37d6dd5ace8423f5ba"
+  version = "v1.0.4"
+
+[[projects]]
   name = "github.com/stretchr/objx"
   packages = ["."]
   revision = "facf9a85c22f48d2f52f2380e4efce1768749a89"
@@ -82,12 +88,18 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["curve25519","ed25519","ed25519/internal/edwards25519","ssh"]
+  packages = ["curve25519","ed25519","ed25519/internal/edwards25519","ssh","ssh/terminal"]
   revision = "0fcca4842a8d74bfddc2c96a073bd2a4d2a7a2e8"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/sys"
+  packages = ["unix","windows"]
+  revision = "dd9ec17814d5b1de388ebe438ec013d57d8b3779"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "02d7e922cb8f75f11c51b596ea4ae5d734ab2eea9bea20d31e7859f862988c0a"
+  inputs-digest = "d96a2c5ab4980c4b0dcc7db43e1e428d306326eb6597f139d0a26254292c4ff7"
   solver-name = "gps-cdcl"
   solver-version = 1
