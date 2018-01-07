@@ -1,16 +1,19 @@
 package targz
 
 import (
+	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"strings"
-
-	"fmt"
 
 	"github.com/Stratoscale/logserver/filesystem"
 )
 
-const suffix = ".tar.gz"
+var (
+	reContains = regexp.MustCompile(`\.tar(\.gz)?`)
+	reSuffix   = regexp.MustCompile(`\.tar(\.gz)?$`)
+)
 
 func New(inner filesystem.FileSystem) filesystem.FileSystem {
 	return &wrap{inner: inner}
@@ -21,8 +24,12 @@ type wrap struct {
 }
 
 func (w *wrap) ReadDir(dirname string) ([]os.FileInfo, error) {
-	if !strings.Contains(dirname, suffix) {
-		return w.inner.ReadDir(dirname)
+	if !reContains.MatchString(dirname) {
+		files, err := w.inner.ReadDir(dirname)
+		if err != nil {
+			return nil, err
+		}
+		return changeTarToDir(files), nil
 	}
 	tfs, innerPath, err := w.getTfs(dirname)
 	if err != nil {
@@ -31,8 +38,18 @@ func (w *wrap) ReadDir(dirname string) ([]os.FileInfo, error) {
 	return tfs.ReadDir(innerPath)
 }
 
+// changeTarToDir exposes tar files as directories
+func changeTarToDir(files []os.FileInfo) []os.FileInfo {
+	for i, file := range files {
+		if reSuffix.MatchString(file.Name()) {
+			files[i] = &tarFile{FileInfo: file}
+		}
+	}
+	return files
+}
+
 func (w *wrap) Lstat(name string) (os.FileInfo, error) {
-	if !strings.Contains(name, suffix) {
+	if !reContains.MatchString(name) {
 		return w.inner.Lstat(name)
 	}
 	tfs, innerPath, err := w.getTfs(name)
@@ -81,14 +98,17 @@ func (w *wrap) getTfs(dirname string) (filesystem.FileSystem, string, error) {
 }
 
 func split(dirname string) (tarName string, innerPath string) {
-	i := strings.Index(dirname, suffix)
-	if i == -1 {
+	loc := reContains.FindStringIndex(dirname)
+	if len(loc) == 0 {
 		return "", dirname
 	}
+	end := loc[1]
 
-	i += len(suffix)
-
-	tarName = dirname[:i]
-	innerPath = strings.Trim(dirname[i:], string(os.PathSeparator))
+	tarName = dirname[:end]
+	innerPath = strings.Trim(dirname[end:], string(os.PathSeparator))
 	return
 }
+
+type tarFile struct{ os.FileInfo }
+
+func (d *tarFile) IsDir() bool { return true }
