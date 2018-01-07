@@ -176,6 +176,7 @@ func (h *handler) search(r Request, ch chan<- *Response) {
 			Meta:  r.Meta,
 			Error: fmt.Sprintf("Bad regexp %s: %s", r.Regexp, err),
 		}
+		return
 	}
 	wg := sync.WaitGroup{}
 	wg.Add(len(h.Sources))
