@@ -94,7 +94,7 @@ func TestWS(t *testing.T) {
 		},
 		{
 			name:    "search / filter node",
-			message: `{"meta":{"action":"search","id":9},"path":[], "regexp": "2d03c436-c197-464f-9ad0-d861e650cd61", "nodes": ["node1"]}`,
+			message: `{"meta":{"action":"search","id":9},"path":[], "regexp": "2d03c436-c197-464f-9ad0-d861e650cd61", "filter_fs": ["node1"]}`,
 			want: []ws.Response{
 				{
 					Meta: ws.Meta{ID: 9, Action: "search", FS: "node1", Path: ws.Path{"mancala.stratolog"}},
@@ -162,7 +162,7 @@ func TestWS(t *testing.T) {
 		},
 		{
 			name:    "get file tree/filter node",
-			message: `{"meta":{"action":"get-file-tree","id":9},"base_path":[], "nodes": ["node2"]}`,
+			message: `{"meta":{"action":"get-file-tree","id":9},"base_path":[], "filter_fs": ["node2"]}`,
 			want: []ws.Response{
 				{
 					Meta: ws.Meta{ID: 9, Action: "get-file-tree"},
