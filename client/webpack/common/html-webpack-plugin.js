@@ -11,5 +11,6 @@ module.exports = function htmlWebpackPlugin(config, APP_PATH) {
     cacheBusterQuery: cacheBusterQuery,
     favicon:          path.resolve(APP_PATH, 'images', 'favico.png'),
     template:         path.resolve(APP_PATH, 'index.html'),
+    basePath:         '{{ .BasePath }}'
   }
 }

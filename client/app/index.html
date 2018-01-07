@@ -16,7 +16,7 @@
 
     <script>
       window.__INIT__ = {
-        basePath: '{{ .BasePath }}'
+        basePath: '{%=o.htmlWebpackPlugin.options.basePath %}'
       }
     </script>
     {% for (var chunk in o.htmlWebpackPlugin.files.chunks) { %}

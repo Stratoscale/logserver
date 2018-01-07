@@ -53,7 +53,10 @@ module.exports = {
     new webpack.HotModuleReplacementPlugin(),
     new webpack.NamedModulesPlugin(),
     new webpack.DefinePlugin(common.definePlugin),
-    new HtmlWebpackPlugin(_.extend({}, common.htmlWebpackPlugin, {chunks: ['app', 'progress']})),
+    new HtmlWebpackPlugin(_.extend({}, common.htmlWebpackPlugin, {
+      chunks:   ['app', 'progress'],
+      basePath: '/'
+    })),
     new AssetsPlugin({
       path:     path.resolve(common.ROOT_PATH, 'dist'),
       filename: 'manifest.json',
