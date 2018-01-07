@@ -13,6 +13,6 @@ build:
 	docker build . -t logserver
 
 client: build
-	docker run --rm -name logserver -d logserver
+	docker run --rm --name logserver -d logserver
 	docker cp logserver:/client/dist ./client/dist
 	docker rm -f logserver

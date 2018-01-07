@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	indexTemplate = template.Must(template.New("index").ParseFiles("./client/dist/index.html"))
+	indexTemplate = template.Must(template.ParseFiles("./client/dist/index.html"))
 	log           = logrus.StandardLogger().WithField("pkg", "router")
 )
 
@@ -30,13 +30,10 @@ func New(cfg config.Config) (http.Handler, error) {
 	}
 
 	serveIndex := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := w.Write(index.Bytes())
-		if err != nil {
-			log.WithError(err).Errorf("Writing index")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
 		w.WriteHeader(http.StatusOK)
+		if _, err := w.Write(index.Bytes()); err != nil {
+			log.WithError(err).Errorf("Writing index")
+		}
 	})
 
 	r := mux.NewRouter()

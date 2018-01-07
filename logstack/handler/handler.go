@@ -53,6 +53,7 @@ func (c *Config) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	rtr, err := router.New(*handlerCfg)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	http.StripPrefix(root[len(c.Root):], rtr).ServeHTTP(w, r)
 }
