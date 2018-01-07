@@ -16,12 +16,27 @@ const colorByLevel = (level = '') => {
 
 class LinesView extends Component {
   render() {
-    let {lines} = this.props
+    let {lines}        = this.props
+    const groupedLines = lines.groupBy(line => line.get('file_name'))
     return (
       <div className="lines-view-container">
         <div className="lines-view">
-          {lines.map((line = Map(), index) => <div key={index} className={cn('line', line.get('level', '').toLowerCase())}>
-            {line.get('level') ? <Tag color={colorByLevel(line.get('level'))}>{line.get('level')}</Tag> : null} {line.get('file_name')} {line.get('msg')}</div>)}
+          {groupedLines.entrySeq().map(([filename, lines]) => {
+            return (
+              <div className="file-results">
+                <div className="file-name">{filename}</div>
+                {lines.map((line = Map(), index) => {
+                    return (
+                      <div key={index} className={cn('line', line.get('level', '').toLowerCase())}>
+                        {line.get('level') ? <Tag color={colorByLevel(line.get('level'))}>{line.get('level')}</Tag> : null}
+                        {line.get('msg')}
+                      </div>
+                    )
+                  }
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
     )

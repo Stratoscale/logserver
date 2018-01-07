@@ -13,7 +13,10 @@ const File = ({path, is_dir, instances, key, showFullPath = false}) => {
   const filename = showFullPath ? '/' + path.join('/') : path[path.length - 1]
   let content
   if (is_dir) {
-    content = <span><Icon type={'folder'}/><Link to={`/files/${path.join('/')}`}>{filename}</Link></span>
+    content = <span>
+      <Icon type={'folder'}/><Link to={`/files/${path.join('/')}`}>{filename}</Link>
+      {instances.map(instance => <Tag key={instance.fs}>{instance.fs}</Tag>)}
+    </span>
   } else {
     const viewURL = `/view?file=/${path.join('/')}`
     content       = <span>

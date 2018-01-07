@@ -21,12 +21,16 @@ class FileView extends Component {
   componentDidMount() {
     const {location, send} = this.props
     const search           = queryString.parse(location.search)
+    const {fs, file = ''}  = search
+
+    const filter_fs = fs ? [fs] : []
     this.props.setSearch('')
     send(API_ACTIONS.GET_FILE_TREE, {
       base_path: [],
     })
     send(API_ACTIONS.GET_CONTENT, {
-      path: search.file.split('/').filter(Boolean),
+      path: file.split('/').filter(Boolean),
+      filter_fs,
     })
   }
 
