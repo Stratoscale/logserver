@@ -8,18 +8,6 @@
   version = "v1.1.0"
 
 [[projects]]
-  name = "github.com/gobuffalo/envy"
-  packages = ["."]
-  revision = "e613c80275b86293880eddeb27417c9a7c670ff3"
-  version = "v1.3.0"
-
-[[projects]]
-  name = "github.com/gobuffalo/packr"
-  packages = ["."]
-  revision = "7458c919b2ddc10bfb5588b6645b7aefd1c60418"
-  version = "v1.10.0"
-
-[[projects]]
   name = "github.com/gorilla/context"
   packages = ["."]
   revision = "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
@@ -44,22 +32,10 @@
   version = "v1.2.0"
 
 [[projects]]
-  name = "github.com/joho/godotenv"
-  packages = ["."]
-  revision = "a79fa1e548e2c689c241d10173efd51e5d689d5b"
-  version = "v1.2.0"
-
-[[projects]]
   branch = "master"
   name = "github.com/kr/fs"
   packages = ["."]
   revision = "2788f0dbd16903de03cb8186e5c7d97b69ad387b"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/mitchellh/go-homedir"
-  packages = ["."]
-  revision = "b8bc1bf767474819792c23f32d8286a45736f1c6"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -112,6 +88,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "52fa52f70010745e2d95b16a134e203ac40e5546841048223235ee827e1594cd"
+  inputs-digest = "02d7e922cb8f75f11c51b596ea4ae5d734ab2eea9bea20d31e7859f862988c0a"
   solver-name = "gps-cdcl"
   solver-version = 1

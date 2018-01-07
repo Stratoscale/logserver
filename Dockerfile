@@ -1,8 +1,6 @@
 FROM golang:1.9.2-alpine as server
 WORKDIR /go/src/github.com/Stratoscale/logserver
 COPY . .
-RUN apk add --no-cache git
-RUN go get ./...
 RUN go build -o /logserver
 RUN go build -o /logstack ./logstack/
 
