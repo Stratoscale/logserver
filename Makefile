@@ -1,3 +1,5 @@
+.PHONY: test run-example run-logstack-example client
+
 test:
 	go test -race ./...
 
@@ -9,3 +11,8 @@ run-logstack-example:
 
 build:
 	docker build . -t logserver
+
+client: build
+	docker run --rm -name logserver -d logserver
+	docker cp logserver:/client/dist ./client/dist
+	docker rm -f logserver
