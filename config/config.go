@@ -71,7 +71,7 @@ func New(fc FileConfig) (*Config, error) {
 		if err != nil {
 			return nil, err
 		}
-		log.Infof("Opened %s", u)
+		log.Infof("Opened: %s", u)
 		if srcDesc.OpenTarFiles {
 			fs = targz.New(fs)
 		}

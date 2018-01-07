@@ -49,7 +49,7 @@ type Request struct {
 	Meta   `json:"meta"`
 	Path   Path     `json:"path"`
 	Regexp string   `json:"regexp"`
-	Nodes  []string `json:"nodes"`
+	FSs    []string `json:"filter_fs"`
 }
 
 // Response from the server
@@ -140,7 +140,7 @@ func (h *handler) serveTree(ctx context.Context, req Request, ch chan<- *Respons
 		files   []*File
 		fileMap = make(map[string]*File)
 	)
-	for _, node := range filterNodes(h.Sources, req.Nodes) {
+	for _, node := range filterNodes(h.Sources, req.FSs) {
 		path := node.FS.Join(req.Path...)
 		walker := fs.WalkFS(path, node.FS)
 		for walker.Step() {
@@ -179,7 +179,7 @@ func (h *handler) serveTree(ctx context.Context, req Request, ch chan<- *Respons
 
 func (h *handler) serveContent(ctx context.Context, req Request, ch chan<- *Response) {
 	wg := sync.WaitGroup{}
-	nodes := filterNodes(h.Sources, req.Nodes)
+	nodes := filterNodes(h.Sources, req.FSs)
 	wg.Add(len(nodes))
 	for _, node := range nodes {
 		go func(node config.Source) {
@@ -200,7 +200,7 @@ func (h *handler) search(ctx context.Context, req Request, ch chan<- *Response) 
 		}
 		return
 	}
-	nodes := filterNodes(h.Sources, req.Nodes)
+	nodes := filterNodes(h.Sources, req.FSs)
 	wg := sync.WaitGroup{}
 	wg.Add(len(nodes))
 	for _, node := range nodes {
