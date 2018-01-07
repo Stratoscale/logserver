@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 
+	"context"
+
 	"github.com/Stratoscale/logserver/config"
 	"github.com/Stratoscale/logserver/parser"
 	"github.com/gorilla/websocket"
@@ -85,14 +87,28 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer close(ch)
 	go reader(conn, ch)
 
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+
 	for {
-		var r Request
-		err = conn.ReadJSON(&r)
+		var req Request
+		err = conn.ReadJSON(&req)
 		if err != nil {
 			log.WithError(err).Errorf("Failed read")
 			return
 		}
-		go h.serve(ch, r)
+		// cancel the last serving up on a new request
+		if cancel != nil {
+			cancel()
+		}
+		ctx, cancel = context.WithCancel(r.Context())
+		go h.serve(ctx, ch, req)
+	}
+	// cancel last serving if exists
+	if cancel != nil {
+		cancel()
 	}
 }
 
@@ -105,28 +121,32 @@ func reader(conn *websocket.Conn, ch <-chan *Response) {
 	}
 }
 
-func (h *handler) serve(ch chan<- *Response, r Request) {
+func (h *handler) serve(ctx context.Context, ch chan<- *Response, r Request) {
 	switch r.Action {
 	case "get-file-tree":
-		h.serveTree(r, ch)
+		h.serveTree(ctx, r, ch)
 
 	case "get-content":
-		h.serveContent(r, ch)
+		h.serveContent(ctx, r, ch)
 
 	case "search":
-		h.search(r, ch)
+		h.search(ctx, r, ch)
 	}
 }
 
-func (h *handler) serveTree(r Request, ch chan<- *Response) {
+func (h *handler) serveTree(ctx context.Context, req Request, ch chan<- *Response) {
 	var (
 		fsElements []*File
 		m          = make(map[string]*File)
 	)
 	for _, node := range h.Sources {
-		path := node.FS.Join(r.Path...)
+		path := node.FS.Join(req.Path...)
 		walker := fs.WalkFS(path, node.FS)
 		for walker.Step() {
+			if err := ctx.Err(); err != nil {
+				return
+			}
+
 			if err := walker.Err(); err != nil {
 				log.WithError(err).Errorf("Failed walk %s:%s", node.Name, path)
 				continue
@@ -153,28 +173,28 @@ func (h *handler) serveTree(r Request, ch chan<- *Response) {
 		}
 	}
 	// reply
-	ch <- &Response{Meta: r.Meta, Tree: fsElements}
+	ch <- &Response{Meta: req.Meta, Tree: fsElements}
 }
 
-func (h *handler) serveContent(r Request, ch chan<- *Response) {
+func (h *handler) serveContent(ctx context.Context, req Request, ch chan<- *Response) {
 	wg := sync.WaitGroup{}
 	wg.Add(len(h.Sources))
 	for _, node := range h.Sources {
 		go func(node config.Source) {
-			path := node.FS.Join(r.Path...)
-			h.read(ch, r, node, path, nil)
-			wg.Done()
+			defer wg.Done()
+			path := node.FS.Join(req.Path...)
+			h.read(ctx, ch, req, node, path, nil)
 		}(node)
 	}
 	wg.Wait()
 }
 
-func (h *handler) search(r Request, ch chan<- *Response) {
-	re, err := regexp.Compile(r.Regexp)
+func (h *handler) search(ctx context.Context, req Request, ch chan<- *Response) {
+	re, err := regexp.Compile(req.Regexp)
 	if err != nil {
 		ch <- &Response{
-			Meta:  r.Meta,
-			Error: fmt.Sprintf("Bad regexp %s: %s", r.Regexp, err),
+			Meta:  req.Meta,
+			Error: fmt.Sprintf("Bad regexp %s: %s", req.Regexp, err),
 		}
 		return
 	}
@@ -182,27 +202,31 @@ func (h *handler) search(r Request, ch chan<- *Response) {
 	wg.Add(len(h.Sources))
 	for _, node := range h.Sources {
 		go func(node config.Source) {
-			path := node.FS.Join(r.Path...)
-			h.searchNode(ch, r, node, path, re)
-			wg.Done()
+			defer wg.Done()
+			path := node.FS.Join(req.Path...)
+			h.searchNode(ctx, ch, req, node, path, re)
 		}(node)
 	}
 	wg.Wait()
 }
 
-func (h *handler) searchNode(ch chan<- *Response, req Request, node config.Source, path string, re *regexp.Regexp) {
+func (h *handler) searchNode(ctx context.Context, ch chan<- *Response, req Request, node config.Source, path string, re *regexp.Regexp) {
 	var walker = fs.WalkFS(path, node.FS)
 	for walker.Step() {
+		if err := ctx.Err(); err != nil {
+			return
+		}
+
 		if err := walker.Err(); err != nil {
 			log.WithError(err).Errorf("Failed walk %s:%s", node.Name, path)
 			continue
 		}
 		filePath := walker.Path()
-		h.read(ch, req, node, filePath, re)
+		h.read(ctx, ch, req, node, filePath, re)
 	}
 }
 
-func (h *handler) read(ch chan<- *Response, req Request, node config.Source, path string, re *regexp.Regexp) {
+func (h *handler) read(ctx context.Context, ch chan<- *Response, req Request, node config.Source, path string, re *regexp.Regexp) {
 	log := log.WithField("path", fmt.Sprintf("%s:%s", node.Name, path))
 	stat, err := node.FS.Lstat(path)
 	if err != nil {
@@ -235,6 +259,9 @@ func (h *handler) read(ch chan<- *Response, req Request, node config.Source, pat
 	}
 
 	for scanner.Scan() {
+		if err := ctx.Err(); err != nil {
+			return
+		}
 		if re != nil && !re.Match(scanner.Bytes()) {
 			lineNumber += 1
 			fileOffset += len(scanner.Bytes())
