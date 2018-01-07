@@ -307,7 +307,7 @@ func (h *handler) read(ctx context.Context, ch chan<- *Response, req Request, no
 		log.WithError(err).Errorf("Failed scan")
 		return
 	}
-	if len(logLines) == 0 && !sentAny {
+	if len(logLines) == 0 && (sentAny || re != nil) {
 		return
 	}
 	ch <- &Response{Meta: respMeta, Lines: logLines}
