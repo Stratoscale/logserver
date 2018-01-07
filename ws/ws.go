@@ -81,7 +81,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ch := make(chan interface{})
+	ch := make(chan *Response)
 	defer close(ch)
 	go reader(conn, ch)
 
@@ -96,7 +96,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func reader(conn *websocket.Conn, ch <-chan interface{}) {
+func reader(conn *websocket.Conn, ch <-chan *Response) {
 	for req := range ch {
 		err := conn.WriteJSON(req)
 		if err != nil {
@@ -105,84 +105,91 @@ func reader(conn *websocket.Conn, ch <-chan interface{}) {
 	}
 }
 
-func (h *handler) serve(ch chan<- interface{}, r Request) {
+func (h *handler) serve(ch chan<- *Response, r Request) {
 	switch r.Action {
 	case "get-file-tree":
-		var (
-			fsElements []*File
-			m          = make(map[string]*File)
-		)
-
-		for _, node := range h.Sources {
-			path := node.FS.Join(r.Path...)
-			walker := fs.WalkFS(path, node.FS)
-			for walker.Step() {
-				if err := walker.Err(); err != nil {
-					log.WithError(err).Errorf("Failed walk %s:%s", node.Name, path)
-					continue
-				}
-
-				key := strings.Trim(walker.Path(), string(os.PathSeparator))
-				if key == "" {
-					continue
-				}
-
-				element := m[key]
-				if element == nil {
-					fsElements = append(fsElements, &File{
-						Key:   key,
-						Path:  strings.Split(key, string(os.PathSeparator)),
-						IsDir: walker.Stat().IsDir(),
-					})
-					m[key] = fsElements[len(fsElements)-1]
-				}
-				m[key].Instances = append(m[key].Instances, FileInstance{
-					Size: walker.Stat().Size(),
-					FS:   node.Name,
-				})
-			}
-		}
-		// reply
-		ch <- &Response{
-			Meta: r.Meta,
-			Tree: fsElements,
-		}
+		h.serveTree(r, ch)
 
 	case "get-content":
-		wg := sync.WaitGroup{}
-		wg.Add(len(h.Sources))
-		for _, node := range h.Sources {
-			go func(node config.Source) {
-				path := node.FS.Join(r.Path...)
-				h.read(ch, r, node, path, nil)
-				wg.Done()
-			}(node)
-		}
-		wg.Wait()
+		h.serveContent(r, ch)
 
 	case "search":
-		re, err := regexp.Compile(r.Regexp)
-		if err != nil {
-			ch <- &Response{
-				Meta:  r.Meta,
-				Error: fmt.Sprintf("Bad regexp %s: %s", r.Regexp, err),
-			}
-		}
-
-		wg := sync.WaitGroup{}
-		wg.Add(len(h.Sources))
-		for _, node := range h.Sources {
-			go func(node config.Source) {
-				path := node.FS.Join(r.Path...)
-				h.search(ch, r, node, path, re)
-				wg.Done()
-			}(node)
-		}
-		wg.Wait()
+		h.search(r, ch)
 	}
 }
 
-func (h *handler) search(ch chan<- interface{}, req Request, node config.Source, path string, re *regexp.Regexp) {
+func (h *handler) serveTree(r Request, ch chan<- *Response) {
+	var (
+		fsElements []*File
+		m          = make(map[string]*File)
+	)
+	for _, node := range h.Sources {
+		path := node.FS.Join(r.Path...)
+		walker := fs.WalkFS(path, node.FS)
+		for walker.Step() {
+			if err := walker.Err(); err != nil {
+				log.WithError(err).Errorf("Failed walk %s:%s", node.Name, path)
+				continue
+			}
+
+			key := strings.Trim(walker.Path(), string(os.PathSeparator))
+			if key == "" {
+				continue
+			}
+
+			element := m[key]
+			if element == nil {
+				fsElements = append(fsElements, &File{
+					Key:   key,
+					Path:  strings.Split(key, string(os.PathSeparator)),
+					IsDir: walker.Stat().IsDir(),
+				})
+				m[key] = fsElements[len(fsElements)-1]
+			}
+			m[key].Instances = append(m[key].Instances, FileInstance{
+				Size: walker.Stat().Size(),
+				FS:   node.Name,
+			})
+		}
+	}
+	// reply
+	ch <- &Response{Meta: r.Meta, Tree: fsElements}
+}
+
+func (h *handler) serveContent(r Request, ch chan<- *Response) {
+	wg := sync.WaitGroup{}
+	wg.Add(len(h.Sources))
+	for _, node := range h.Sources {
+		go func(node config.Source) {
+			path := node.FS.Join(r.Path...)
+			h.read(ch, r, node, path, nil)
+			wg.Done()
+		}(node)
+	}
+	wg.Wait()
+}
+
+func (h *handler) search(r Request, ch chan<- *Response) {
+	re, err := regexp.Compile(r.Regexp)
+	if err != nil {
+		ch <- &Response{
+			Meta:  r.Meta,
+			Error: fmt.Sprintf("Bad regexp %s: %s", r.Regexp, err),
+		}
+	}
+	wg := sync.WaitGroup{}
+	wg.Add(len(h.Sources))
+	for _, node := range h.Sources {
+		go func(node config.Source) {
+			path := node.FS.Join(r.Path...)
+			h.searchNode(ch, r, node, path, re)
+			wg.Done()
+		}(node)
+	}
+	wg.Wait()
+}
+
+func (h *handler) searchNode(ch chan<- *Response, req Request, node config.Source, path string, re *regexp.Regexp) {
 	var walker = fs.WalkFS(path, node.FS)
 	for walker.Step() {
 		if err := walker.Err(); err != nil {
@@ -194,7 +201,7 @@ func (h *handler) search(ch chan<- interface{}, req Request, node config.Source,
 	}
 }
 
-func (h *handler) read(ch chan<- interface{}, req Request, node config.Source, path string, re *regexp.Regexp) {
+func (h *handler) read(ch chan<- *Response, req Request, node config.Source, path string, re *regexp.Regexp) {
 	log := log.WithField("path", fmt.Sprintf("%s:%s", node.Name, path))
 	stat, err := node.FS.Lstat(path)
 	if err != nil {
