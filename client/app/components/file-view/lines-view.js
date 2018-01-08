@@ -23,7 +23,7 @@ class LinesView extends Component {
         <div className="lines-view">
           {groupedLines.entrySeq().map(([filename, lines]) => {
             return (
-              <div className="file-results">
+              <div className="file-results" key={filename}>
                 <div className="file-name">{filename}</div>
                 {lines.map((line = Map(), index) => {
                     return (

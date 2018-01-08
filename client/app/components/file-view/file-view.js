@@ -32,9 +32,11 @@ class FileView extends Component {
     const {location} = this.props
     const search     = queryString.parse(location.search)
     const {fs}       = search
-    this.setState({
-      activeFs: [fs],
-    })
+    if (fs) {
+      this.setState({
+        activeFs: [fs],
+      })
+    }
 
     this.props.setSearch('')
     this.props.clearContent()
@@ -81,10 +83,9 @@ class FileView extends Component {
 
   render() {
     const {content, location, index} = this.props
-    if (!content || content.size === 0) {
-      return (
-        <div>File is empty</div>
-      )
+    let contentComponent             = <div>File is empty</div>
+    if (content && content.size > 0) {
+      contentComponent = <LinesView lines={content}/>
     }
 
     const [_, ...path] = location.pathname.split('/').filter(Boolean)
@@ -96,10 +97,10 @@ class FileView extends Component {
           items={file.get('instances', List()).map(instance => ({
             name:   instance.get('fs'),
             active: this.state.activeFs.includes(instance.get('fs')),
-          }))}
+          })).toJS()}
           onToggle={this._handleToggle}
         />
-        <LinesView lines={content}/>
+        {contentComponent}
       </div>
     )
   }

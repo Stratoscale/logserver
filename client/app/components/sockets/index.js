@@ -30,7 +30,7 @@ export default class SocketContainer extends Component {
             break
           }
           case API_ACTIONS.GET_CONTENT: {
-            this.props.setContent(payload.lines, meta.id)
+            this.props.setContent(payload.lines || [], meta.id)
             break
           }
           case API_ACTIONS.SEARCH: {
