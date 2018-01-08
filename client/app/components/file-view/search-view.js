@@ -3,7 +3,7 @@ import {filesSelector, fileSystemsSelector, locationSelect, searchResultsSelecto
 import {connect} from 'react-redux'
 import {createStructuredSelector} from 'reselect'
 import {send} from 'sockets/socket-actions'
-import LinesView from 'file-view/lines-view'
+import {LinesView} from 'file-view/lines-view'
 
 @connect(createStructuredSelector({
   location:    locationSelect,
@@ -25,9 +25,9 @@ class SearchView extends Component {
     }
 
     return (
-      <div>
+      <div className="search-view">
         {fileSystems}
-        <LinesView lines={results}/>
+        <LinesView lines={results} showFileName/>
       </div>
     )
   }

@@ -7,7 +7,7 @@ import {createStructuredSelector} from 'reselect'
 import queryString from 'query-string'
 import {clearContent, send, setSearch} from 'sockets/socket-actions'
 import {API_ACTIONS} from 'consts'
-import LinesView from 'file-view/lines-view'
+import {LinesView} from 'file-view/lines-view'
 import {FSBar} from 'fs-bar'
 
 @connect(createStructuredSelector({
@@ -92,7 +92,7 @@ class FileView extends Component {
     const file         = index.get(path.join('/'))
 
     return (
-      <div>
+      <div className="file-view">
         <FSBar
           items={file.get('instances', List()).map(instance => ({
             name:   instance.get('fs'),

@@ -19,7 +19,7 @@ class FSBar extends Component {
   render() {
     const {items} = this.props
     return (
-      <div>
+      <div className="fs-bar">
         {items.map((item, index) => <CheckableTag onChange={this.props.onToggle.bind(this, item.name)} key={index}
                                                   checked={item.active}>{item.name}</CheckableTag>)}
       </div>

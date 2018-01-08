@@ -97,7 +97,7 @@ class Home extends Component {
         </Header>
         <Content style={{padding: '0 50px'}}>
           <Breadcrumbs/>
-          <div style={{background: '#fff', padding: 24, minHeight: 280}}>
+          <div className="main-content" style={{background: '#fff', padding: 24, minHeight: 280}}>
             <Switch>
               <Route path="/files/*" component={FileTree} exact={false}/>
               <Route path="/search" component={SearchView} exact={true}/>

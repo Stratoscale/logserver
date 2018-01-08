@@ -1,4 +1,16 @@
 .home
+  min-height: 100vh
+  .fs-bar
+    flex: 0 0 auto
+  .ant-layout-content
+    display: flex
+    flex-direction: column
+    .main-content
+      flex: auto
+      display: flex
+      flex-direction: column
+      .file-view
+        flex: auto
   .ant-breadcrumb
     height: 31px
     line-height: 31px
@@ -18,6 +30,12 @@
       margin: 0 5px
   .line
     font-family: monospace
+    font-size: 12px
+    .ant-tag
+      font-size: 10px
+      line-height: 13px
+      height: 13px
+      padding: 0 4px
     &.error
       color: darkred
   .tree-search
@@ -25,13 +43,19 @@
     padding: 5px
     background: rgba(0, 0, 0, 0.05)
   .ant-list
-    max-height: 80vh
     overflow-y: auto
+  .file-view
+    display: flex
+    flex-direction: column
   .lines-view-container
+    flex: auto
+    display: flex
+    flex-direction: column
+    outline: none
     .controls
       margin-bottom: 10px
     .lines-view
-      max-height: 80vh
+      flex: auto
       overflow-y: auto
       .file-results
         .file-name
