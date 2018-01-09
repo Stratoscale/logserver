@@ -3,7 +3,7 @@ import cn from 'classnames'
 import {Map} from 'immutable'
 import {Tag} from 'antd'
 import PropTypes from 'prop-types'
-import {List, WindowScroller, AutoSizer} from 'react-virtualized'
+import {List, AutoSizer} from 'react-virtualized'
 
 
 const colorByLevel = (level = '') => {
@@ -65,7 +65,7 @@ class LinesView extends Component {
             rowRenderer={({
                             index,
                             key,
-                            style
+                            style,
                           }) => {
               const line    = lines.get(index)
               const content = [line.get('level') ?
