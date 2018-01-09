@@ -8,9 +8,9 @@ import (
 	"os"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/Stratoscale/logserver/config"
 	"github.com/Stratoscale/logserver/debug"
 	"github.com/Stratoscale/logserver/router"
+	"github.com/Stratoscale/logserver/source"
 )
 
 var log = logrus.WithField("pkg", "main")
@@ -43,11 +43,11 @@ func main() {
 	failOnErr(err, fmt.Sprintf("open file %s", options.jsonFile))
 	defer f.Close()
 
-	var cf config.FileConfig
+	var cf source.FileConfig
 	err = json.NewDecoder(f).Decode(&cf)
 	failOnErr(err, "decode file")
 
-	c, err := config.New(cf)
+	c, err := source.New(cf)
 	failOnErr(err, "creating config")
 
 	defer c.CloseSources()

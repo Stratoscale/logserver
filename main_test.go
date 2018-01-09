@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Stratoscale/logserver/config"
 	"github.com/Stratoscale/logserver/parser"
 	"github.com/Stratoscale/logserver/router"
+	"github.com/Stratoscale/logserver/source"
 	"github.com/Stratoscale/logserver/ws"
 	"github.com/gorilla/websocket"
 	"github.com/test-go/testify/assert"
@@ -26,8 +26,8 @@ func mustParseTime(s string) *time.Time {
 }
 
 func TestWS(t *testing.T) {
-	cfg, err := config.New(config.FileConfig{
-		Sources: []config.SourceConfig{
+	cfg, err := source.New(source.FileConfig{
+		Sources: []source.SourceConfig{
 			{Name: "node1", URL: "file://./example/log1"},
 			{Name: "node2", URL: "file://./example/log2"},
 		},
@@ -240,9 +240,19 @@ func TestWS(t *testing.T) {
 				t.Fatal("no response!")
 			}
 		}
-		sort.Slice(got, func(i, j int) bool { return strings.Compare(got[i].Meta.FS, got[j].Meta.FS) == -1 })
-		sort.Slice(tt.want, func(i, j int) bool { return strings.Compare(tt.want[i].Meta.FS, tt.want[j].Meta.FS) == -1 })
+		sortResp(got)
+		sortResp(tt.want)
 		assert.Equal(t, tt.want, got)
+	}
+}
+
+func sortResp(responses []ws.Response) {
+	sort.Slice(responses, func(i, j int) bool { return strings.Compare(responses[i].Meta.FS, responses[j].Meta.FS) == -1 })
+	for _, resp := range responses {
+		sort.Slice(resp.Tree, func(i, j int) bool { return strings.Compare(resp.Tree[i].Key, resp.Tree[j].Key) == -1 })
+		for _, file := range resp.Tree {
+			sort.Slice(file.Instances, func(i, j int) bool { return strings.Compare(file.Instances[i].FS, file.Instances[j].FS) == -1 })
+		}
 	}
 }
 

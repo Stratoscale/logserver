@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Stratoscale/logserver/config"
 	"github.com/Stratoscale/logserver/router"
+	"github.com/Stratoscale/logserver/source"
 )
 
 type Config struct {
@@ -33,10 +33,10 @@ func (c *Config) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cfg := config.FileConfig{}
+	cfg := source.FileConfig{}
 	for _, file := range files {
 		if file.Mode().IsDir() {
-			cfg.Sources = append(cfg.Sources, config.SourceConfig{
+			cfg.Sources = append(cfg.Sources, source.SourceConfig{
 				Name:         file.Name(),
 				URL:          "file://" + filepath.Join(root, file.Name()),
 				OpenTarFiles: true,
@@ -44,7 +44,7 @@ func (c *Config) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	handlerCfg, err := config.New(cfg)
+	handlerCfg, err := source.New(cfg)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

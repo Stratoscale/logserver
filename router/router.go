@@ -7,7 +7,7 @@ import (
 	"text/template"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/Stratoscale/logserver/config"
+	"github.com/Stratoscale/logserver/source"
 	"github.com/Stratoscale/logserver/ws"
 	"github.com/gorilla/mux"
 )
@@ -17,7 +17,7 @@ var (
 	log           = logrus.WithField("pkg", "router")
 )
 
-func New(cfg config.Config) (http.Handler, error) {
+func New(cfg source.Config) (http.Handler, error) {
 	var (
 		static = http.FileServer(http.Dir("./client/dist"))
 	)

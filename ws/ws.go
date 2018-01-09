@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/Stratoscale/logserver/config"
 	"github.com/Stratoscale/logserver/debug"
 	"github.com/Stratoscale/logserver/parser"
+	"github.com/Stratoscale/logserver/source"
 	"github.com/gorilla/websocket"
 	"github.com/kr/fs"
 )
@@ -23,14 +23,14 @@ import (
 var log = logrus.WithField("pkg", "ws")
 
 // New returns a new websocket handler
-func New(c config.Config) http.Handler {
+func New(c source.Config) http.Handler {
 	return &handler{
 		Config: c,
 	}
 }
 
 type handler struct {
-	config.Config
+	source.Config
 }
 
 // Path describes a file path
@@ -146,56 +146,84 @@ func (h *handler) serve(ctx context.Context, ch chan<- *Response, req Request) {
 
 func (h *handler) serveTree(ctx context.Context, req Request, ch chan<- *Response) {
 	var (
-		files   []*File
-		fileMap = make(map[string]*File)
+		c  = newCombiner()
+		wg sync.WaitGroup
 	)
-	for _, node := range filterNodes(h.Sources, req.FilterFS) {
-		path := node.FS.Join(req.Path...)
-		walker := fs.WalkFS(path, node.FS)
-		for walker.Step() {
-			if err := ctx.Err(); err != nil {
-				return
-			}
-
-			if err := walker.Err(); err != nil {
-				log.WithError(err).Errorf("Failed walk %s:%s", node.Name, path)
-				continue
-			}
-
-			key := strings.Trim(walker.Path(), string(os.PathSeparator))
-			if key == "" {
-				continue
-			}
-
-			element := fileMap[key]
-			if element == nil {
-				files = append(files, &File{
-					Key:   key,
-					Path:  strings.Split(key, string(os.PathSeparator)),
-					IsDir: walker.Stat().IsDir(),
-				})
-				fileMap[key] = files[len(files)-1]
-			}
-			fileMap[key].Instances = append(fileMap[key].Instances, FileInstance{
-				Size: walker.Stat().Size(),
-				FS:   node.Name,
-			})
-		}
+	sources := filterNodes(h.Sources, req.FilterFS)
+	wg.Add(len(sources))
+	for _, src := range sources {
+		go func(src source.Source) {
+			defer wg.Done()
+			h.nodeTree(ctx, req, src, c)
+		}(src)
 	}
-	// reply
-	ch <- &Response{Meta: req.Meta, Tree: files}
+	wg.Wait()
+	log.Debugf("Serve tree for %v with %d files", req.Path, len(c.files))
+	ch <- &Response{Meta: req.Meta, Tree: c.files}
+}
+
+func (h *handler) nodeTree(ctx context.Context, req Request, src source.Source, c *combiner) {
+	path := src.FS.Join(req.Path...)
+	walker := fs.WalkFS(path, src.FS)
+	for walker.Step() {
+		if err := ctx.Err(); err != nil {
+			return
+		}
+
+		if err := walker.Err(); err != nil {
+			log.WithError(err).Errorf("Failed walk %s:%s", src.Name, path)
+			continue
+		}
+
+		key := strings.Trim(walker.Path(), string(os.PathSeparator))
+		if key == "" {
+			continue
+		}
+
+		c.add(
+			File{
+				Key:   key,
+				Path:  strings.Split(key, string(os.PathSeparator)),
+				IsDir: walker.Stat().IsDir(),
+			},
+			FileInstance{
+				Size: walker.Stat().Size(),
+				FS:   src.Name,
+			},
+		)
+	}
+}
+
+type combiner struct {
+	files []*File
+	index map[string]*File
+	lock  sync.Mutex
+}
+
+func newCombiner() *combiner {
+	return &combiner{index: make(map[string]*File)}
+}
+
+func (c *combiner) add(f File, instance FileInstance) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	if c.index[f.Key] == nil {
+		c.files = append(c.files, &f)
+		c.index[f.Key] = c.files[len(c.files)-1]
+	}
+	c.index[f.Key].Instances = append(c.index[f.Key].Instances, instance)
 }
 
 func (h *handler) serveContent(ctx context.Context, req Request, ch chan<- *Response) {
 	wg := sync.WaitGroup{}
-	nodes := filterNodes(h.Sources, req.FilterFS)
-	wg.Add(len(nodes))
-	for _, node := range nodes {
-		go func(node config.Source) {
+	sources := filterNodes(h.Sources, req.FilterFS)
+	wg.Add(len(sources))
+	for _, src := range sources {
+		go func(src source.Source) {
 			defer wg.Done()
-			path := node.FS.Join(req.Path...)
-			h.read(ctx, ch, req, node, path, nil)
-		}(node)
+			path := src.FS.Join(req.Path...)
+			h.read(ctx, ch, req, src, path, nil)
+		}(src)
 	}
 	wg.Wait()
 }
@@ -213,7 +241,7 @@ func (h *handler) search(ctx context.Context, req Request, ch chan<- *Response) 
 	wg := sync.WaitGroup{}
 	wg.Add(len(nodes))
 	for _, node := range nodes {
-		go func(node config.Source) {
+		go func(node source.Source) {
 			defer wg.Done()
 			path := node.FS.Join(req.Path...)
 			h.searchNode(ctx, ch, req, node, path, re)
@@ -222,7 +250,7 @@ func (h *handler) search(ctx context.Context, req Request, ch chan<- *Response) 
 	wg.Wait()
 }
 
-func (h *handler) searchNode(ctx context.Context, ch chan<- *Response, req Request, node config.Source, path string, re *regexp.Regexp) {
+func (h *handler) searchNode(ctx context.Context, ch chan<- *Response, req Request, node source.Source, path string, re *regexp.Regexp) {
 	var walker = fs.WalkFS(path, node.FS)
 	for walker.Step() {
 		if err := ctx.Err(); err != nil {
@@ -238,7 +266,7 @@ func (h *handler) searchNode(ctx context.Context, ch chan<- *Response, req Reque
 	}
 }
 
-func (h *handler) read(ctx context.Context, ch chan<- *Response, req Request, node config.Source, path string, re *regexp.Regexp) {
+func (h *handler) read(ctx context.Context, ch chan<- *Response, req Request, node source.Source, path string, re *regexp.Regexp) {
 	log := log.WithField("path", fmt.Sprintf("%s:%s", node.Name, path))
 	stat, err := node.FS.Lstat(path)
 	if err != nil {
@@ -326,15 +354,15 @@ func (h *handler) read(ctx context.Context, ch chan<- *Response, req Request, no
 	ch <- &Response{Meta: respMeta, Lines: logLines}
 }
 
-func filterNodes(sources []config.Source, filterNodes []string) []config.Source {
-	if len(filterNodes) == 0 {
+func filterNodes(sources []source.Source, filterSources []string) []source.Source {
+	if len(filterSources) == 0 {
 		return sources
 	}
-	nodes := make(map[string]bool, len(filterNodes))
-	for _, node := range filterNodes {
+	nodes := make(map[string]bool, len(filterSources))
+	for _, node := range filterSources {
 		nodes[node] = true
 	}
-	ret := make([]config.Source, 0, len(filterNodes))
+	ret := make([]source.Source, 0, len(filterSources))
 	for _, src := range sources {
 		if nodes[src.Name] {
 			ret = append(ret, src)
