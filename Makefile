@@ -4,10 +4,10 @@ test:
 	go test -race ./...
 
 run-example:
-	go run ./main.go
+	go run ./main.go -debug
 
 run-logstack-example:
-	go run ./logstack/main.go
+	go run ./logstack/main.go -debug
 
 build:
 	docker build . -t logserver

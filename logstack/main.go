@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/Stratoscale/logserver/debug"
 	"github.com/Stratoscale/logserver/logstack/handler"
 	"github.com/bakins/logrus-middleware"
 	"github.com/gorilla/handlers"
@@ -54,8 +55,14 @@ func main() {
 	logMW := logrusmiddleware.Middleware{Logger: log.Logger}
 	h = logMW.Handler(handlers.LoggingHandler(logger{}, h), "")
 
+	m := http.NewServeMux()
+	m.Handle("/", h)
+	if options.debug {
+		debug.PProfHandle(m)
+	}
+
 	log.Infof("serving on http://localhost:%d", options.port)
-	err := http.ListenAndServe(fmt.Sprintf(":%d", options.port), h)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", options.port), m)
 	if err != nil {
 		panic(err)
 	}

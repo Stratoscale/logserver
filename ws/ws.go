@@ -14,6 +14,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/Stratoscale/logserver/config"
+	"github.com/Stratoscale/logserver/debug"
 	"github.com/Stratoscale/logserver/parser"
 	"github.com/gorilla/websocket"
 	"github.com/kr/fs"
@@ -82,7 +83,8 @@ type FileInstance struct {
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Debugf("Got ws Request from: %s", r.RemoteAddr)
+	log.Infof("New WS Client from: %s", r.RemoteAddr)
+	defer log.Info("Disconnected WS Client from: %s", r.RemoteAddr)
 	u := new(websocket.Upgrader)
 	conn, err := u.Upgrade(w, r, nil)
 	if err != nil {
@@ -129,6 +131,7 @@ func reader(conn *websocket.Conn, ch <-chan *Response) {
 }
 
 func (h *handler) serve(ctx context.Context, ch chan<- *Response, req Request) {
+	defer debug.Time(log, "Request %+v", req.Meta)()
 	switch req.Action {
 	case "get-file-tree":
 		h.serveTree(ctx, req, ch)

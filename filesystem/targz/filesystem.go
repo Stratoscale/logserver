@@ -7,11 +7,13 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/Stratoscale/logserver/debug"
 )
+
+var log = logrus.StandardLogger().WithField("pkg", "targz")
 
 func NewFS(r io.ReadCloser) (*FileSystem, error) {
 	var tarReader *tar.Reader
@@ -49,13 +51,13 @@ func (f *FileSystem) ReadDir(dirname string) ([]os.FileInfo, error) {
 		}
 		content = append(content, h.FileInfo())
 	}
-	sort.Slice(content, func(i, j int) bool { return content[i].Name() < content[j].Name() })
 	return content, nil
 }
 
 // Lstat implements the FileSystem Lstat method,
 // it returns fileinfo for a given path
 func (f *FileSystem) Lstat(name string) (os.FileInfo, error) {
+	defer debug.Time(log, "Stat %s", name)()
 	for {
 		h, err := f.Reader.Next()
 		if err == io.EOF {
@@ -78,7 +80,7 @@ func (f *FileSystem) Join(elem ...string) string {
 }
 
 func (f *FileSystem) Open(name string) (io.ReadCloser, error) {
-	logrus.Infof("Opening Tar file %s", name)
+	defer debug.Time(log, "Opened: %s", name)()
 	_, err := f.Lstat(name)
 	if err != nil {
 		return nil, err

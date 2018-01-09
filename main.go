@@ -9,6 +9,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/Stratoscale/logserver/config"
+	"github.com/Stratoscale/logserver/debug"
 	"github.com/Stratoscale/logserver/router"
 )
 
@@ -54,7 +55,14 @@ func main() {
 	log.Infof("serving on http://localhost:%d", options.port)
 	rtr, err := router.New(*c)
 	failOnErr(err, "creating router")
-	err = http.ListenAndServe(fmt.Sprintf(":%d", options.port), rtr)
+
+	m := http.NewServeMux()
+	m.Handle("/", rtr)
+	if options.debug {
+		debug.PProfHandle(m)
+	}
+
+	err = http.ListenAndServe(fmt.Sprintf(":%d", options.port), m)
 	failOnErr(err, "serving")
 }
 
