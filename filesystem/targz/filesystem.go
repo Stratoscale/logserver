@@ -5,11 +5,10 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"io/ioutil"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/Stratoscale/logserver/debug"
@@ -79,9 +78,6 @@ func (f *FileSystem) Join(elem ...string) string {
 }
 
 func (f *FileSystem) Open(name string) (filesystem.File, error) {
-	if name == "" {
-		return nil, notFound(name)
-	}
 	defer debug.Time(log, "Opened: %s", name)()
 
 	if _, ok := f.index[name]; !ok {
@@ -111,11 +107,13 @@ func (f *FileSystem) Close() error {
 
 func isInDir(dirname, name string) bool {
 	const sep = string(os.PathSeparator)
+	dirname = strings.Trim(dirname, sep)
+	name = strings.Trim(name, sep)
 	if !strings.HasPrefix(name, dirname) {
 		return false
 	}
-	after := name[len(dirname):]
-	return !strings.Contains(strings.Trim(after, sep), sep)
+	after := strings.Trim(name[len(dirname):], sep)
+	return len(after) != 0 && !strings.Contains(after, sep)
 }
 
 func (f *FileSystem) tarReader() *tar.Reader {

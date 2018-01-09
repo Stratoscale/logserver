@@ -1,12 +1,12 @@
 package targz
 
 import (
-	"fmt"
+	"io/ioutil"
 	"net/url"
-	"os"
 	"testing"
 
-	"io/ioutil"
+	"sort"
+	"strings"
 
 	"github.com/Stratoscale/logserver/filesystem"
 	"github.com/test-go/testify/assert"
@@ -14,18 +14,13 @@ import (
 )
 
 func Test_wrapper(t *testing.T) {
-	cwd, err := os.Getwd()
+	u, err := url.Parse("file://../../example/log3")
 	require.Nil(t, err)
-	_url := fmt.Sprintf("file://%s/../../example/log3", cwd)
-	parsedUrl, err := url.Parse(_url)
+	fs, err := filesystem.NewLocalFS(u)
 	require.Nil(t, err)
-	var fs filesystem.FileSystem
-	fs, err = filesystem.NewLocalFS(parsedUrl)
-	if err != nil {
-		panic(err)
-	}
 	fs = New(fs)
-	tests := []struct {
+
+	openTests := []struct {
 		path        string
 		wantErr     bool
 		wantContent string
@@ -44,8 +39,8 @@ func Test_wrapper(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.path, func(t *testing.T) {
+	for _, tt := range openTests {
+		t.Run("open/"+tt.path, func(t *testing.T) {
 			f, err := fs.Open(tt.path)
 			if tt.wantErr {
 				assert.NotNil(t, err)
@@ -57,21 +52,83 @@ func Test_wrapper(t *testing.T) {
 			}
 		})
 	}
+
+	dirTests := []struct {
+		path string
+		want []fileInfo
+	}{
+		{
+			path: "/",
+			want: []fileInfo{
+				{name: "dir1", isDir: true},
+				{name: "dir2", isDir: true},
+				{name: "service1.log", isDir: false},
+				{name: "service2.log", isDir: false},
+			},
+		},
+		{
+			path: "dir2",
+			want: []fileInfo{
+				{name: "logs.tar.gz", isDir: true},
+			},
+		},
+		{
+			path: "dir2/logs.tar.gz",
+			want: []fileInfo{
+				{name: "first", isDir: true},
+			},
+		},
+		{
+			path: "dir2/logs.tar.gz/first/second/",
+			want: []fileInfo{
+				{name: "third", isDir: true},
+			},
+		},
+		{
+			path: "dir2/logs.tar.gz/first/second/third",
+			want: []fileInfo{
+				{name: "tar_service.log", isDir: false},
+			},
+		},
+	}
+
+	for _, tt := range dirTests {
+		t.Run("dir/"+tt.path, func(t *testing.T) {
+			files, err := fs.ReadDir(tt.path)
+			require.Nil(t, err)
+			var gotFileInfos []fileInfo
+			for _, f := range files {
+				gotFileInfos = append(gotFileInfos, fileInfo{f.Name(), f.IsDir()})
+			}
+			sort.Slice(gotFileInfos, func(i, j int) bool { return strings.Compare(gotFileInfos[i].name, gotFileInfos[j].name) == -1 })
+
+			assert.Equal(t, tt.want, gotFileInfos)
+		})
+	}
+}
+
+type fileInfo struct {
+	name  string
+	isDir bool
 }
 
 func Test_isInDir(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name    string
 		dirname string
+		name    string
 		want    bool
 	}{
-		{
-			name:    "/a/b",
-			dirname: "/a",
-			want:    true,
-		},
+		{dirname: "/a/", name: "/a/b", want: true},
+		{dirname: "/a", name: "/a/b/", want: true},
+		{dirname: "/a/", name: "/a/b/", want: true},
+		{dirname: "/a", name: "/a/b", want: true},
+		{dirname: "a", name: "/a/b", want: true},
+		{dirname: "/a", name: "a/b", want: true},
+		{dirname: "/a", name: "/a", want: false},
+		{dirname: "/a/b", name: "/a", want: false},
+		{dirname: "/a/b", name: "/a", want: false},
 	}
 
 	for _, tt := range tests {

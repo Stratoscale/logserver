@@ -11,7 +11,7 @@ type LocalFS struct {
 	basePath string
 }
 
-func NewLocalFS(u *url.URL) (*LocalFS, error) {
+func NewLocalFS(u *url.URL) (FileSystem, error) {
 	fs := &LocalFS{
 		basePath: filepath.Join(u.Host, u.Path),
 	}

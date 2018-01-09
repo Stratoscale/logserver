@@ -19,7 +19,7 @@ type SFTP struct {
 }
 
 // NewSFTP returns a new SFTP filesystem
-func NewSFTP(u *url.URL) (*SFTP, error) {
+func NewSFTP(u *url.URL) (FileSystem, error) {
 	config := &ssh.ClientConfig{}
 	if u.User != nil {
 		config.User = u.User.Username()
