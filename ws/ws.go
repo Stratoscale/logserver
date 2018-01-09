@@ -92,9 +92,9 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ch := make(chan *Response)
-	defer close(ch)
-	go reader(conn, ch)
+	send := make(chan *Response)
+	defer close(send)
+	go reader(conn, send)
 
 	var (
 		ctx    context.Context
@@ -113,7 +113,12 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			cancel()
 		}
 		ctx, cancel = context.WithCancel(r.Context())
-		go h.serve(ctx, ch, req)
+		go h.serve(ctx, req, func(resp *Response) {
+			select {
+			case send <- resp:
+			case <-ctx.Done():
+			}
+		})
 	}
 	// cancel last serving if exists
 	if cancel != nil {
@@ -130,21 +135,21 @@ func reader(conn *websocket.Conn, ch <-chan *Response) {
 	}
 }
 
-func (h *handler) serve(ctx context.Context, ch chan<- *Response, req Request) {
+func (h *handler) serve(ctx context.Context, req Request, send func(*Response)) {
 	defer debug.Time(log, "Request %+v", req.Meta)()
 	switch req.Action {
 	case "get-file-tree":
-		h.serveTree(ctx, req, ch)
+		h.serveTree(ctx, req, send)
 
 	case "get-content":
-		h.serveContent(ctx, req, ch)
+		h.serveContent(ctx, req, send)
 
 	case "search":
-		h.search(ctx, req, ch)
+		h.search(ctx, req, send)
 	}
 }
 
-func (h *handler) serveTree(ctx context.Context, req Request, ch chan<- *Response) {
+func (h *handler) serveTree(ctx context.Context, req Request, send func(*Response)) {
 	var (
 		c  = newCombiner()
 		wg sync.WaitGroup
@@ -154,15 +159,15 @@ func (h *handler) serveTree(ctx context.Context, req Request, ch chan<- *Respons
 	for _, src := range sources {
 		go func(src source.Source) {
 			defer wg.Done()
-			h.nodeTree(ctx, req, src, c)
+			h.srcTree(ctx, req, src, c)
 		}(src)
 	}
 	wg.Wait()
 	log.Debugf("Serve tree for %v with %d files", req.Path, len(c.files))
-	ch <- &Response{Meta: req.Meta, Tree: c.files}
+	send(&Response{Meta: req.Meta, Tree: c.files})
 }
 
-func (h *handler) nodeTree(ctx context.Context, req Request, src source.Source, c *combiner) {
+func (h *handler) srcTree(ctx context.Context, req Request, src source.Source, c *combiner) {
 	path := src.FS.Join(req.Path...)
 	walker := fs.WalkFS(path, src.FS)
 	for walker.Step() {
@@ -214,7 +219,7 @@ func (c *combiner) add(f File, instance FileInstance) {
 	c.index[f.Key].Instances = append(c.index[f.Key].Instances, instance)
 }
 
-func (h *handler) serveContent(ctx context.Context, req Request, ch chan<- *Response) {
+func (h *handler) serveContent(ctx context.Context, req Request, send func(*Response)) {
 	wg := sync.WaitGroup{}
 	sources := filterNodes(h.Sources, req.FilterFS)
 	wg.Add(len(sources))
@@ -222,19 +227,19 @@ func (h *handler) serveContent(ctx context.Context, req Request, ch chan<- *Resp
 		go func(src source.Source) {
 			defer wg.Done()
 			path := src.FS.Join(req.Path...)
-			h.read(ctx, ch, req, src, path, nil)
+			h.read(ctx, send, req, src, path, nil)
 		}(src)
 	}
 	wg.Wait()
 }
 
-func (h *handler) search(ctx context.Context, req Request, ch chan<- *Response) {
+func (h *handler) search(ctx context.Context, req Request, send func(*Response)) {
 	re, err := regexp.Compile(req.Regexp)
 	if err != nil {
-		ch <- &Response{
+		send(&Response{
 			Meta:  req.Meta,
 			Error: fmt.Sprintf("Bad regexp %s: %s", req.Regexp, err),
-		}
+		})
 		return
 	}
 	nodes := filterNodes(h.Sources, req.FilterFS)
@@ -244,13 +249,13 @@ func (h *handler) search(ctx context.Context, req Request, ch chan<- *Response) 
 		go func(node source.Source) {
 			defer wg.Done()
 			path := node.FS.Join(req.Path...)
-			h.searchNode(ctx, ch, req, node, path, re)
+			h.searchNode(ctx, send, req, node, path, re)
 		}(node)
 	}
 	wg.Wait()
 }
 
-func (h *handler) searchNode(ctx context.Context, ch chan<- *Response, req Request, node source.Source, path string, re *regexp.Regexp) {
+func (h *handler) searchNode(ctx context.Context, send func(*Response), req Request, node source.Source, path string, re *regexp.Regexp) {
 	var walker = fs.WalkFS(path, node.FS)
 	for walker.Step() {
 		if err := ctx.Err(); err != nil {
@@ -262,11 +267,11 @@ func (h *handler) searchNode(ctx context.Context, ch chan<- *Response, req Reque
 			continue
 		}
 		filePath := walker.Path()
-		h.read(ctx, ch, req, node, filePath, re)
+		h.read(ctx, send, req, node, filePath, re)
 	}
 }
 
-func (h *handler) read(ctx context.Context, ch chan<- *Response, req Request, node source.Source, path string, re *regexp.Regexp) {
+func (h *handler) read(ctx context.Context, send func(*Response), req Request, node source.Source, path string, re *regexp.Regexp) {
 	log := log.WithField("path", fmt.Sprintf("%s:%s", node.Name, path))
 	stat, err := node.FS.Lstat(path)
 	if err != nil {
@@ -335,7 +340,7 @@ func (h *handler) read(ctx context.Context, ch chan<- *Response, req Request, no
 		// send them to the client and continue
 		if len(logLines) > h.Config.ContentBatchSize || time.Now().Sub(lastRespTime) > h.ContentBatchTime {
 			sentAny = true
-			ch <- &Response{Meta: respMeta, Lines: logLines}
+			send(&Response{Meta: respMeta, Lines: logLines})
 			logLines = nil
 			lastRespTime = time.Now()
 		}
@@ -351,7 +356,7 @@ func (h *handler) read(ctx context.Context, ch chan<- *Response, req Request, no
 	if len(logLines) == 0 && (sentAny || re != nil) {
 		return
 	}
-	ch <- &Response{Meta: respMeta, Lines: logLines}
+	send(&Response{Meta: respMeta, Lines: logLines})
 }
 
 func filterNodes(sources []source.Source, filterSources []string) []source.Source {
