@@ -1,7 +1,6 @@
 package filesystem
 
 import (
-	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -34,7 +33,7 @@ func (f *LocalFS) Join(elem ...string) string {
 	return filepath.Join(elem...)
 }
 
-func (f *LocalFS) Open(name string) (io.ReadCloser, error) {
+func (f *LocalFS) Open(name string) (File, error) {
 	return os.Open(filepath.Join(f.basePath, name))
 }
 

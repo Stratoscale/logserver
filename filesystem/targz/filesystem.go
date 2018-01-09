@@ -9,69 +9,68 @@ import (
 	"path/filepath"
 	"strings"
 
+	"io/ioutil"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/Stratoscale/logserver/debug"
+	"github.com/Stratoscale/logserver/filesystem"
 )
 
 var log = logrus.StandardLogger().WithField("pkg", "targz")
 
-func NewFS(r io.ReadCloser) (*FileSystem, error) {
-	var tarReader *tar.Reader
-
-	if z, err := gzip.NewReader(r); err == nil {
-		tarReader = tar.NewReader(z)
-	} else {
-		tarReader = tar.NewReader(r)
+func NewFS(file filesystem.File) (*FileSystem, error) {
+	fs := &FileSystem{
+		index:  make(map[string]os.FileInfo),
+		file:   file,
+		Closer: file,
 	}
-	return &FileSystem{
-		Reader: tarReader,
-		Closer: r,
-	}, nil
+	return fs, fs.init()
 }
 
 type FileSystem struct {
-	Reader *tar.Reader
+	list   []os.FileInfo
+	index  map[string]os.FileInfo
+	file   filesystem.File
 	Closer io.Closer
+}
+
+func (f *FileSystem) init() error {
+	tarReader := f.tarReader()
+	for {
+		h, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		f.list = append(f.list, h.FileInfo())
+		f.index[h.Name] = f.list[len(f.list)-1]
+	}
+	return nil
 }
 
 // ReadDir implements the FileSystem ReadDir method,
 // It returns a list of fileinfos in a given path
 func (f *FileSystem) ReadDir(dirname string) ([]os.FileInfo, error) {
-	var content []os.FileInfo
-	for {
-		h, err := f.Reader.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-		if !isInDir(dirname, h.Name) {
+	files := make([]os.FileInfo, 0, len(f.index))
+	for path, file := range f.index {
+		if !isInDir(dirname, path) {
 			continue
 		}
-		content = append(content, h.FileInfo())
+		files = append(files, file)
 	}
-	return content, nil
+	return files, nil
 }
 
 // Lstat implements the FileSystem Lstat method,
 // it returns fileinfo for a given path
 func (f *FileSystem) Lstat(name string) (os.FileInfo, error) {
-	defer debug.Time(log, "Stat %s", name)()
-	for {
-		h, err := f.Reader.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-		if h.Name != name {
-			continue
-		}
-		return h.FileInfo(), nil
+	file := f.index[name]
+	if file == nil {
+		return nil, notFound(name)
 	}
-	return nil, fmt.Errorf("not found: %s", name)
+	return file, nil
 }
 
 // Join implements the FileSystem Join method,
@@ -79,32 +78,58 @@ func (f *FileSystem) Join(elem ...string) string {
 	return filepath.Join(elem...)
 }
 
-func (f *FileSystem) Open(name string) (io.ReadCloser, error) {
-	defer debug.Time(log, "Opened: %s", name)()
-	_, err := f.Lstat(name)
-	if err != nil {
-		return nil, err
+func (f *FileSystem) Open(name string) (filesystem.File, error) {
+	if name == "" {
+		return nil, notFound(name)
 	}
-	return &readCloser{Reader: f.Reader, Closer: f.Closer}, nil
+	defer debug.Time(log, "Opened: %s", name)()
+
+	if _, ok := f.index[name]; !ok {
+		return nil, notFound(name)
+	}
+
+	f.file.Seek(0, io.SeekStart)
+	tarReader := f.tarReader()
+	for {
+		h, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		if h.Name == name {
+			return &file{ReadCloser: ioutil.NopCloser(tarReader), Seeker: f.file}, nil
+		}
+	}
+	return nil, notFound(name)
 }
 
 func (f *FileSystem) Close() error {
 	return f.Closer.Close()
 }
 
-type readCloser struct {
-	io.Reader
-	io.Closer
-}
-
 func isInDir(dirname, name string) bool {
+	const sep = string(os.PathSeparator)
 	if !strings.HasPrefix(name, dirname) {
 		return false
 	}
 	after := name[len(dirname):]
-	if strings.Contains(strings.Trim(after, string(os.PathSeparator)), string(os.PathListSeparator)) {
-		return false
-	}
-	return true
+	return !strings.Contains(strings.Trim(after, sep), sep)
+}
 
+func (f *FileSystem) tarReader() *tar.Reader {
+	if z, err := gzip.NewReader(f.file); err == nil {
+		return tar.NewReader(z)
+	}
+	return tar.NewReader(f.file)
+}
+
+type file struct {
+	io.ReadCloser
+	io.Seeker
+}
+
+func notFound(name string) error {
+	return fmt.Errorf("not found: '%s'", name)
 }

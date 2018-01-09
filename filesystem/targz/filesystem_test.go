@@ -49,12 +49,12 @@ func Test_wrapper(t *testing.T) {
 			f, err := fs.Open(tt.path)
 			if tt.wantErr {
 				assert.NotNil(t, err)
-				return
+			} else {
+				require.Nil(t, err)
+				gotContent, err := ioutil.ReadAll(f)
+				require.Nil(t, err)
+				assert.Equal(t, tt.wantContent, string(gotContent))
 			}
-			assert.Nil(t, err)
-			gotContent, err := ioutil.ReadAll(f)
-			require.Nil(t, err)
-			assert.Equal(t, tt.wantContent, string(gotContent))
 		})
 	}
 }

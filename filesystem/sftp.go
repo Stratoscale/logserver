@@ -2,7 +2,6 @@ package filesystem
 
 import (
 	"fmt"
-	"io"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -58,7 +57,7 @@ func (s *SFTP) Join(elem ...string) string {
 	return s.client.Join(elem...)
 }
 
-func (s *SFTP) Open(path string) (io.ReadCloser, error) {
+func (s *SFTP) Open(path string) (File, error) {
 	return s.client.Open(filepath.Join(s.basePath, path))
 }
 
