@@ -18,6 +18,7 @@ var options struct {
 	rootPath string
 	port     int
 	markFile string
+	debug    bool
 }
 
 func init() {
@@ -25,9 +26,10 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	flag.StringVar(&options.rootPath, "root", cwd, "path to root directory")
-	flag.StringVar(&options.markFile, "mark-file", "logstack.enable", "file that marks test root")
-	flag.IntVar(&options.port, "port", 8889, "port to listen on")
+	flag.StringVar(&options.rootPath, "root", cwd, "Path to root directory")
+	flag.StringVar(&options.markFile, "mark-file", "logstack.enable", "File that marks test root")
+	flag.IntVar(&options.port, "port", 8889, "Port to listen on")
+	flag.BoolVar(&options.debug, "debug", false, "Show debug logs")
 }
 
 type logger struct{}
@@ -39,6 +41,11 @@ func (logger) Write(p []byte) (n int, err error) {
 
 func main() {
 	flag.Parse()
+
+	if options.debug {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
+
 	var h http.Handler = &handler.Config{
 		Root:     options.rootPath,
 		MarkFile: options.markFile,

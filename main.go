@@ -22,15 +22,22 @@ const (
 var options struct {
 	port     int
 	jsonFile string
+	debug    bool
 }
 
 func init() {
 	flag.IntVar(&options.port, "port", port, "Listen port")
 	flag.StringVar(&options.jsonFile, "json", defaultConfig, "Path to a config json file")
+	flag.BoolVar(&options.debug, "debug", false, "Show debug logs")
 }
 
 func main() {
 	flag.Parse()
+
+	if options.debug {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
+
 	f, err := os.Open(options.jsonFile)
 	failOnErr(err, fmt.Sprintf("open file %s", options.jsonFile))
 	defer f.Close()
