@@ -10,12 +10,16 @@ import (
 	"path/filepath"
 	"strings"
 
+	"time"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/Stratoscale/logserver/debug"
 	"github.com/Stratoscale/logserver/filesystem"
 )
 
 var log = logrus.StandardLogger().WithField("pkg", "targz")
+
+const sep = string(os.PathSeparator)
 
 func NewFS(file filesystem.File) (*FileSystem, error) {
 	fs := &FileSystem{
@@ -42,15 +46,32 @@ func (f *FileSystem) init() error {
 		if err != nil {
 			return err
 		}
-		f.index[h.Name] = h.FileInfo()
+		f.index[strings.Trim(h.Name, sep)] = h.FileInfo()
+		for _, dir := range subDirs(h.Name) {
+			if _, ok := f.index[dir]; !ok {
+				f.index[dir] = &fileInfo{name: filepath.Base(dir), isDir: true}
+			}
+		}
 	}
 	return nil
+}
+
+func subDirs(path string) []string {
+	var subDirs []string
+	dir, _ := filepath.Split(path)
+	dir = strings.Trim(dir, sep)
+	for dir != "" {
+		subDirs = append(subDirs, dir)
+		dir, _ = filepath.Split(dir)
+		dir = strings.Trim(dir, sep)
+	}
+	return subDirs
 }
 
 // ReadDir implements the FileSystem ReadDir method,
 // It returns a list of fileinfos in a given path
 func (f *FileSystem) ReadDir(dirname string) ([]os.FileInfo, error) {
-	files := make([]os.FileInfo, 0, len(f.index))
+	var files []os.FileInfo
 	for path, file := range f.index {
 		if isInDir(dirname, path) {
 			files = append(files, file)
@@ -103,7 +124,6 @@ func (f *FileSystem) Close() error {
 }
 
 func isInDir(dirname, name string) bool {
-	const sep = string(os.PathSeparator)
 	dirname = strings.Trim(dirname, sep)
 	name = strings.Trim(name, sep)
 	if !strings.HasPrefix(name, dirname) {
@@ -128,3 +148,15 @@ type file struct {
 func notFound(name string) error {
 	return fmt.Errorf("not found: '%s'", name)
 }
+
+type fileInfo struct {
+	name  string
+	isDir bool
+}
+
+func (f *fileInfo) Name() string       { return f.name }
+func (f *fileInfo) IsDir() bool        { return f.isDir }
+func (f *fileInfo) Size() int64        { return 0 }
+func (f *fileInfo) Mode() os.FileMode  { return 0666 }
+func (f *fileInfo) ModTime() time.Time { return time.Time{} }
+func (f *fileInfo) Sys() interface{}   { return nil }

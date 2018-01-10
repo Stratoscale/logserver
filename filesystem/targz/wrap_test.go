@@ -3,17 +3,16 @@ package targz
 import (
 	"io/ioutil"
 	"net/url"
-	"testing"
-
 	"sort"
 	"strings"
+	"testing"
 
 	"github.com/Stratoscale/logserver/filesystem"
 	"github.com/test-go/testify/assert"
 	"github.com/test-go/testify/require"
 )
 
-func Test_wrapper(t *testing.T) {
+func TestWrap(t *testing.T) {
 	u, err := url.Parse("file://../../example/log3")
 	require.Nil(t, err)
 	fs, err := filesystem.NewLocalFS(u)
@@ -107,11 +106,6 @@ func Test_wrapper(t *testing.T) {
 	}
 }
 
-type fileInfo struct {
-	name  string
-	isDir bool
-}
-
 func Test_isInDir(t *testing.T) {
 	t.Parallel()
 
@@ -136,4 +130,21 @@ func Test_isInDir(t *testing.T) {
 		assert.Equal(t, tt.want, got)
 	}
 
+}
+
+func Test_subDirs(t *testing.T) {
+	tests := []struct {
+		path string
+		want []string
+	}{
+		{path: ""},
+		{path: "xxx"},
+		{path: "xxx/yyy", want: []string{"xxx"}},
+		{path: "xxx/yyy/zzz", want: []string{"xxx/yyy", "xxx"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			assert.Equal(t, tt.want, subDirs(tt.path))
+		})
+	}
 }

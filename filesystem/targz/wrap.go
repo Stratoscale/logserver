@@ -100,7 +100,7 @@ func split(dirname string) (tarName string, innerPath string) {
 	end := loc[1]
 
 	tarName = dirname[:end]
-	innerPath = strings.Trim(dirname[end:], string(os.PathSeparator))
+	innerPath = strings.Trim(dirname[end:], sep)
 	return
 }
 
