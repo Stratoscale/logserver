@@ -147,6 +147,9 @@ func (h *handler) serve(ctx context.Context, req Request, send func(*Response)) 
 	case "search":
 		h.search(ctx, req, send)
 	}
+	if err := ctx.Err(); err != nil {
+		log.Debugf("Request %d cancelled", req.ID)
+	}
 }
 
 func (h *handler) serveTree(ctx context.Context, req Request, send func(*Response)) {
@@ -168,6 +171,7 @@ func (h *handler) serveTree(ctx context.Context, req Request, send func(*Respons
 }
 
 func (h *handler) srcTree(ctx context.Context, req Request, src source.Source, c *combiner) {
+	const sep = string(os.PathSeparator)
 	path := src.FS.Join(req.Path...)
 	walker := fs.WalkFS(path, src.FS)
 	for walker.Step() {
@@ -180,7 +184,7 @@ func (h *handler) srcTree(ctx context.Context, req Request, src source.Source, c
 			continue
 		}
 
-		key := strings.Trim(walker.Path(), string(os.PathSeparator))
+		key := strings.Trim(walker.Path(), sep)
 		if key == "" {
 			continue
 		}
@@ -188,7 +192,7 @@ func (h *handler) srcTree(ctx context.Context, req Request, src source.Source, c
 		c.add(
 			File{
 				Key:   key,
-				Path:  strings.Split(key, string(os.PathSeparator)),
+				Path:  strings.Split(key, sep),
 				IsDir: walker.Stat().IsDir(),
 			},
 			FileInstance{
