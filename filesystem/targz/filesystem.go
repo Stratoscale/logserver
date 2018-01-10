@@ -27,7 +27,6 @@ func NewFS(file filesystem.File) (*FileSystem, error) {
 }
 
 type FileSystem struct {
-	list   []os.FileInfo
 	index  map[string]os.FileInfo
 	file   filesystem.File
 	Closer io.Closer
@@ -43,8 +42,7 @@ func (f *FileSystem) init() error {
 		if err != nil {
 			return err
 		}
-		f.list = append(f.list, h.FileInfo())
-		f.index[h.Name] = f.list[len(f.list)-1]
+		f.index[h.Name] = h.FileInfo()
 	}
 	return nil
 }
@@ -54,10 +52,9 @@ func (f *FileSystem) init() error {
 func (f *FileSystem) ReadDir(dirname string) ([]os.FileInfo, error) {
 	files := make([]os.FileInfo, 0, len(f.index))
 	for path, file := range f.index {
-		if !isInDir(dirname, path) {
-			continue
+		if isInDir(dirname, path) {
+			files = append(files, file)
 		}
-		files = append(files, file)
 	}
 	return files, nil
 }
