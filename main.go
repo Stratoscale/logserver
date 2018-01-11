@@ -104,10 +104,3 @@ func failOnErr(err error, msg string) {
 	}
 	log.Fatalf("%s: %s", msg, err)
 }
-
-type logger struct{}
-
-func (logger) Write(p []byte) (n int, err error) {
-	log.Debugf(string(p))
-	return len(p), nil
-}
