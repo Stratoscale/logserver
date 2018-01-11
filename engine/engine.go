@@ -1,4 +1,4 @@
-package ws
+package engine
 
 import (
 	"bufio"
@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -14,7 +13,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/Stratoscale/logserver/debug"
-	"github.com/Stratoscale/logserver/parser"
+	"github.com/Stratoscale/logserver/parse"
 	"github.com/Stratoscale/logserver/source"
 	"github.com/gorilla/websocket"
 	"github.com/kr/fs"
@@ -22,15 +21,38 @@ import (
 
 var log = logrus.WithField("pkg", "ws")
 
+const (
+	defaultContentBatchSize = 2000
+	defaultContentBatchTime = time.Second * 2
+	defaultSearchMaxSize    = 5000
+)
+
+// Config are global configuration parameter for logserver
+type Config struct {
+	ContentBatchSize int           `json:"content_batch_size"`
+	ContentBatchTime time.Duration `json:"content_batch_time"`
+	SearchMaxSize    int           `json:"search_max_size"`
+}
+
 // New returns a new websocket handler
-func New(c source.Config) http.Handler {
-	return &handler{
-		Config: c,
+func New(c Config, s source.Sources, p parse.Parse) http.Handler {
+	h := &handler{Config: c, source: s, parse: p}
+	if h.ContentBatchSize == 0 {
+		h.ContentBatchSize = defaultContentBatchSize
 	}
+	if h.ContentBatchTime == 0 {
+		h.ContentBatchTime = defaultContentBatchTime
+	}
+	if h.SearchMaxSize == 0 {
+		h.SearchMaxSize = defaultSearchMaxSize
+	}
+	return h
 }
 
 type handler struct {
-	source.Config
+	Config
+	source source.Sources
+	parse  parse.Parse
 }
 
 // Path describes a file path
@@ -62,9 +84,9 @@ type TimeRange struct {
 // Response from the server
 type Response struct {
 	Meta  `json:"meta"`
-	Lines []parser.LogLine `json:"lines,omitempty"`
-	Tree  []*File          `json:"tree,omitempty"`
-	Error string           `json:"error,omitempty"`
+	Lines []parse.Log `json:"lines,omitempty"`
+	Tree  []*File     `json:"tree,omitempty"`
+	Error string      `json:"error,omitempty"`
 }
 
 // File describes a file in multiple file systems
@@ -157,7 +179,7 @@ func (h *handler) serveTree(ctx context.Context, req Request, send func(*Respons
 		c  = newCombiner()
 		wg sync.WaitGroup
 	)
-	sources := filterNodes(h.Sources, req.FilterFS)
+	sources := filterNodes(h.source, req.FilterFS)
 	wg.Add(len(sources))
 	for _, src := range sources {
 		go func(src source.Source) {
@@ -225,7 +247,7 @@ func (c *combiner) add(f File, instance FileInstance) {
 
 func (h *handler) serveContent(ctx context.Context, req Request, send func(*Response)) {
 	wg := sync.WaitGroup{}
-	sources := filterNodes(h.Sources, req.FilterFS)
+	sources := filterNodes(h.source, req.FilterFS)
 	wg.Add(len(sources))
 	for _, src := range sources {
 		go func(src source.Source) {
@@ -246,7 +268,7 @@ func (h *handler) search(ctx context.Context, req Request, send func(*Response))
 		})
 		return
 	}
-	nodes := filterNodes(h.Sources, req.FilterFS)
+	nodes := filterNodes(h.source, req.FilterFS)
 	wg := sync.WaitGroup{}
 	wg.Add(len(nodes))
 	for _, node := range nodes {
@@ -294,9 +316,8 @@ func (h *handler) read(ctx context.Context, send func(*Response), req Request, n
 	defer r.Close()
 
 	var (
-		pars         = parser.GetParser(filepath.Ext(path))
 		scanner      = bufio.NewScanner(r)
-		logLines     []parser.LogLine
+		logLines     []parse.Log
 		lastRespTime = time.Now()
 		lineNumber   = 1
 		fileOffset   = 0
@@ -323,26 +344,23 @@ func (h *handler) read(ctx context.Context, send func(*Response), req Request, n
 			continue
 		}
 
-		logLine, err := pars(scanner.Bytes())
-		if err != nil {
-			logLine = &parser.LogLine{Msg: scanner.Text()}
-		}
-		logLine.FileName = path
-		logLine.Offset = fileOffset
-		logLine.FS = node.Name
-		logLine.LineNumber = lineNumber
+		log := h.parse.Parse(path, scanner.Bytes())
+		log.FileName = path
+		log.Offset = fileOffset
+		log.FS = node.Name
+		log.Line = lineNumber
 
-		if filterOutTime(logLine, req.FilterTime) {
+		if filterOutTime(log, req.FilterTime) {
 			continue
 		}
 
-		logLines = append(logLines, *logLine)
+		logLines = append(logLines, *log)
 		lineNumber += 1
 		fileOffset += len(scanner.Bytes())
 
 		// if we read lines more than the defined batch size or batch time,
 		// send them to the client and continue
-		if len(logLines) > h.Config.ContentBatchSize || time.Now().Sub(lastRespTime) > h.ContentBatchTime {
+		if len(logLines) > h.ContentBatchSize || time.Now().Sub(lastRespTime) > h.ContentBatchTime {
 			sentAny = true
 			send(&Response{Meta: respMeta, Lines: logLines})
 			logLines = nil
@@ -380,7 +398,7 @@ func filterNodes(sources []source.Source, filterSources []string) []source.Sourc
 	return ret
 }
 
-func filterOutTime(line *parser.LogLine, timeRange TimeRange) bool {
+func filterOutTime(line *parse.Log, timeRange TimeRange) bool {
 	if start := timeRange.Start; start != nil {
 		return line.Time == nil || start.After(*line.Time)
 	}

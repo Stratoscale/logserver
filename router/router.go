@@ -7,8 +7,6 @@ import (
 	"text/template"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/Stratoscale/logserver/source"
-	"github.com/Stratoscale/logserver/ws"
 	"github.com/gorilla/mux"
 )
 
@@ -17,12 +15,15 @@ var (
 	log           = logrus.WithField("pkg", "router")
 )
 
-func New(cfg source.Config) (http.Handler, error) {
-	var (
-		static = http.FileServer(http.Dir("./client/dist"))
-	)
+type Config struct {
+	BasePath string
+	Engine   http.Handler
+}
+
+func New(c Config) (http.Handler, error) {
+	var static = http.FileServer(http.Dir("./client/dist"))
 	index := bytes.NewBuffer(nil)
-	if err := indexTemplate.Execute(index, &cfg); err != nil {
+	if err := indexTemplate.Execute(index, c); err != nil {
 		return nil, fmt.Errorf("executing index template: %s", err)
 	}
 
@@ -34,7 +35,7 @@ func New(cfg source.Config) (http.Handler, error) {
 	})
 
 	r := mux.NewRouter()
-	r.Methods(http.MethodGet).Path("/ws").Handler(ws.New(cfg))
+	r.Methods(http.MethodGet).Path("/ws").Handler(c.Engine)
 	r.Methods(http.MethodGet).Path("/").Handler(serveIndex)
 	r.Methods(http.MethodGet).Path("/index.html").Handler(serveIndex)
 	r.Methods(http.MethodGet).PathPrefix("/files").Handler(http.StripPrefix("/files", serveIndex))

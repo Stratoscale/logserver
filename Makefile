@@ -6,8 +6,8 @@ test:
 run-example:
 	go run ./main.go -debug
 
-run-logstack-example:
-	go run ./logstack/main.go -debug
+run-example-dynamic:
+	go run ./main.go -debug -dynamic
 
 build:
 	docker build . -t logserver
