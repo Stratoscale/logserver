@@ -20,16 +20,16 @@
   version = "v1.1.0"
 
 [[projects]]
+  name = "github.com/gobwas/glob"
+  packages = [".","compiler","match","syntax","syntax/ast","syntax/lexer","util/runes","util/strings"]
+  revision = "bea32b9cd2d6f55753d94a28e959b13f0244797a"
+  version = "v0.2.2"
+
+[[projects]]
   name = "github.com/gorilla/context"
   packages = ["."]
   revision = "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
   version = "v1.1"
-
-[[projects]]
-  name = "github.com/gorilla/handlers"
-  packages = ["."]
-  revision = "90663712d74cb411cbef281bc1e08c19d1a76145"
-  version = "v1.3.0"
 
 [[projects]]
   name = "github.com/gorilla/mux"
@@ -94,6 +94,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "585e9a765b036d3618f682e48040766dd6cad66578a7e84c61357a1a441c7d98"
+  inputs-digest = "053e1969a300cc212b58c87a48b06248e7df50038e986204331ac5f9d6f4fe6e"
   solver-name = "gps-cdcl"
   solver-version = 1
