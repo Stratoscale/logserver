@@ -25,10 +25,10 @@ const (
 )
 
 var options struct {
-	port     int
-	jsonFile string
-	debug    bool
-	dynamic  bool
+	port    int
+	config  string
+	debug   bool
+	dynamic bool
 }
 
 type config struct {
@@ -40,7 +40,7 @@ type config struct {
 
 func init() {
 	flag.IntVar(&options.port, "port", port, "Listen port")
-	flag.StringVar(&options.jsonFile, "json", defaultConfig, "Path to a config json file")
+	flag.StringVar(&options.config, "config", defaultConfig, "Path to a config file")
 	flag.BoolVar(&options.debug, "debug", false, "Show debug logs")
 	flag.BoolVar(&options.dynamic, "dynamic", false, "Run dynamic mod")
 }
@@ -52,7 +52,7 @@ func main() {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
-	cfg := loadConfig(options.jsonFile)
+	cfg := loadConfig(options.config)
 
 	parser, err := parse.New(cfg.Parsers)
 	failOnErr(err, "creating parsers")

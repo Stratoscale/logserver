@@ -4,10 +4,10 @@ test:
 	go test -race ./...
 
 run-example:
-	go run ./main.go -debug
+	go run ./main.go -debug -config ./example/logserver.json
 
 run-example-dynamic:
-	go run ./main.go -debug -dynamic
+	go run ./main.go -debug -dynamic -config ./example/logserver.json
 
 build:
 	docker build . -t logserver
