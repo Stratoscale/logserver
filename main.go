@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 
+	"net"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/Stratoscale/logserver/debug"
 	"github.com/Stratoscale/logserver/dynamic"
@@ -21,14 +23,21 @@ var log = logrus.WithField("pkg", "main")
 
 const (
 	defaultConfig = "logserver.json"
-	port          = 8888
+	defaultAddr   = "localhost:8888"
 )
 
 var options struct {
-	port    int
+	addr    string
 	config  string
 	debug   bool
 	dynamic bool
+}
+
+func init() {
+	flag.StringVar(&options.addr, "defaultAddr", defaultAddr, "Serving address")
+	flag.StringVar(&options.config, "config", defaultConfig, "Path to a config file")
+	flag.BoolVar(&options.debug, "debug", false, "Show debug logs")
+	flag.BoolVar(&options.dynamic, "dynamic", false, "Run in dynamic mode")
 }
 
 type config struct {
@@ -38,19 +47,17 @@ type config struct {
 	Dynamic dynamic.Config  `json:"dynamic"`
 }
 
-func init() {
-	flag.IntVar(&options.port, "port", port, "Listen port")
-	flag.StringVar(&options.config, "config", defaultConfig, "Path to a config file")
-	flag.BoolVar(&options.debug, "debug", false, "Show debug logs")
-	flag.BoolVar(&options.dynamic, "dynamic", false, "Run dynamic mod")
-}
-
 func main() {
 	flag.Parse()
 
+	// apply debug logs
 	if options.debug {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
+
+	// validate address
+	_, _, err := net.SplitHostPort(options.addr)
+	failOnErr(err, "bad address value: %s", options.addr)
 
 	cfg := loadConfig(options.config)
 
@@ -76,14 +83,14 @@ func main() {
 		h = logMW.Handler(h, "")
 	}
 
-	log.Infof("serving on http://localhost:%d", options.port)
+	log.Infof("Serving on http://%s", options.addr)
 	m := http.NewServeMux()
 	m.Handle("/", h)
 	if options.debug {
 		debug.PProfHandle(m)
 	}
 
-	err = http.ListenAndServe(fmt.Sprintf(":%d", options.port), m)
+	err = http.ListenAndServe(options.addr, m)
 	failOnErr(err, "serving")
 }
 
@@ -98,9 +105,9 @@ func loadConfig(fileName string) config {
 	return cfg
 }
 
-func failOnErr(err error, msg string) {
+func failOnErr(err error, msg string, args ...interface{}) {
 	if err == nil {
 		return
 	}
-	log.Fatalf("%s: %s", msg, err)
+	log.Fatalf("%s: %s", fmt.Sprintf(msg, args...), err)
 }
