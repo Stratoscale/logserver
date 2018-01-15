@@ -4,34 +4,69 @@ Logserver is a web log viewer that combines logs from several sources.
 
 ## Usage
 
-### Config File
+### Install
 
-The config file has the following specifications:
+* Get the binary with go get:
 
-- `sources` (list of source dicts): Logs sources, from which the logs are merged ans served.
-- `parsers` (list of parser dicts): Which parsers to apply to the log files.
+`go get -u githbub.com/Stratoscale/logserver`
 
-### Source Dict
+### Run a Docker Container
+
+Assuming:
+
+* A logserver config is in `/etc/logserver/logserver.json`.
+* Logserver should listen to port 80
+
+The command line:
+
+```
+docker run -d --restart always --name logserver --net host \
+    -v /etc/logserver/logserver.json:/logserver:json \
+    logserver -addr 0.0.0.0:80
+```
+
+### Configuration
+
+Logserver is configured with a json configuration file. See [example](./example/logserver.json).
+
+The json should be a dict with the following keys:
+
+- `sources` (list of [source dicts](./README.md#source-dict)): Logs sources, from which the logs are merged ans served.
+- `parsers` (list of [parser dicts](./README.md#parser-dict)): Which parsers to apply to the log files.
+
+#### Source Dict
 
 - `name` (string): Name of source, the name that this source will be shown as
-- `url` (URL string): URL of source, see [supported sources](#Supported URL schemes) schemes below.
-- `open_tar_files` (bool): Wether to treat tar files as directories, used for logs that are packed
+- `url` (URL string with [supported schemes](./README.md#supported-url-schemes)): URL of source.
+- `open_tar_files` (bool): Weather to treat tar files as directories, used for logs that are packed
                            into a tar file.
 
 #### Supported URL Schemes
 
-- `file://` (URL string): Address in local file system.
-- `sftp://` (URL string): Address of sftp server (or SSH server).
-- `ssh://` (URL string): Address of ssh server.
+Logserver supports different type of log sources, each has a different scheme:
 
-### Parser Dict
+- `file://` (URL string): Address in local file system.
+                          The file location can be absolute with `file:///var/log` or relative to the firectory
+                          from which the command line was executed: `file://./log`.
+- `sftp://` (URL string): Address of sftp server (or SSH server).
+                          The URL can contain a user name and password and path from the system root.
+                          For example: `sftp://user:password@example.com:22/var/log`
+- `ssh://` (URL string): Address of ssh server. Obey the same rules as sftp server.
+
+#### Parser Dict
+
+Logserver can parse each log line according to a list of configured parsers.
+Parsers can handle json logs (each line is a json dict), or regular logs with regular expression rules.
+
+Each parser can be defined with the following keys:
 
 - `glob` (string): File pattern to apply this parser on.
 - `time_formats` (list of strings): Parse timestamp string according to those time formats.
                                     The given format should be in Go style time formats, or
                                     `unix_int` or `unix_float`.
-- `json_mapping` (dict): Parse each log line as a json, and map keys from that json to the UI expected keys.
-                         The keys are values that the UI expect, the values are keys from the file json.
+- `json_mapping` (dict): Parse each log line as a json, and map keys from that json to the
+                         [UI expected keys](./README.md#ui-keys). The keys are values that the
+                         UI expect, the values are keys from the file json.
 - `regexp` (Go style regular expression string): Parse each line in the long with this regular expression.
                                                  the given regular expression should have named groups with
                                                  the keys that the UI expects.
