@@ -2,11 +2,13 @@ package filesystem
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net"
 	"net/url"
 	"os"
+	"os/user"
 	"path/filepath"
-
-	"net"
+	"strings"
 
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
@@ -20,18 +22,28 @@ type SFTP struct {
 
 // NewSFTP returns a new SFTP filesystem
 func NewSFTP(u *url.URL) (FileSystem, error) {
-	config := &ssh.ClientConfig{}
+	config := &ssh.ClientConfig{
+		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error { return nil },
+	}
+
+	// add user's public key to ssh configuration
+	usr, pubKey := publicKey()
+	config.User = usr
+	config.Auth = append(config.Auth, pubKey)
+
+	// add user/password authentication if specified in url
 	if u.User != nil {
-		config.User = u.User.Username()
+		usr = u.User.Username()
+		config.User = usr
 		if password, ok := u.User.Password(); ok {
 			config.Auth = append(config.Auth, ssh.Password(password))
 		}
 	}
-	config.HostKeyCallback = func(hostname string, remote net.Addr, key ssh.PublicKey) error { return nil }
 
-	conn, err := ssh.Dial("tcp", u.Host, config)
+	hp := hostPort(u.Host)
+	conn, err := ssh.Dial("tcp", hp, config)
 	if err != nil {
-		return nil, fmt.Errorf("dial %s: %s", u.Hostname(), err)
+		return nil, fmt.Errorf("dial %s: %s", hp, err)
 	}
 
 	client, err := sftp.NewClient(conn)
@@ -63,4 +75,27 @@ func (s *SFTP) Open(path string) (File, error) {
 
 func (s *SFTP) Close() error {
 	return s.client.Close()
+}
+
+func publicKey() (username string, pubKey ssh.AuthMethod) {
+	usr, err := user.Current()
+	if err != nil {
+		return "", nil
+	}
+	key, err := ioutil.ReadFile(filepath.Join(usr.HomeDir, ".ssh/id_rsa"))
+	if err != nil {
+		return "", nil
+	}
+	signer, err := ssh.ParsePrivateKey(key)
+	if err != nil {
+		return "", nil
+	}
+	return usr.Username, ssh.PublicKeys(signer)
+}
+
+func hostPort(host string) string {
+	if !strings.ContainsRune(host, ':') {
+		return fmt.Sprintf("%s:%d", host, 22)
+	}
+	return host
 }
