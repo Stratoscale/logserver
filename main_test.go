@@ -30,7 +30,7 @@ func TestHandler(t *testing.T) {
 	if testing.Verbose() {
 		logrus.StandardLogger().SetLevel(logrus.DebugLevel)
 	}
-	cfg := loadConfig("./logserver.json")
+	cfg := loadConfig("./example/logserver.json")
 
 	sources, err := source.New(cfg.Sources)
 	require.Nil(t, err)
