@@ -34,7 +34,7 @@ var options struct {
 }
 
 func init() {
-	flag.StringVar(&options.addr, "defaultAddr", defaultAddr, "Serving address")
+	flag.StringVar(&options.addr, "addr", defaultAddr, "Serving address")
 	flag.StringVar(&options.config, "config", defaultConfig, "Path to a config file")
 	flag.BoolVar(&options.debug, "debug", false, "Show debug logs")
 	flag.BoolVar(&options.dynamic, "dynamic", false, "Run in dynamic mode")
