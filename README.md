@@ -22,7 +22,7 @@ The command line:
 ```
 docker run -d --restart always --name logserver --net host \
     -v /etc/logserver/logserver.json:/logserver:json \
-    logserver -addr :80
+    Stratoscale/logserver -addr :80
 ```
 
 ### Configuration
