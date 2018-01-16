@@ -29,7 +29,9 @@ func NewSFTP(u *url.URL) (FileSystem, error) {
 	// add user's public key to ssh configuration
 	usr, pubKey := publicKey()
 	config.User = usr
-	config.Auth = append(config.Auth, pubKey)
+	if pubKey != nil {
+		config.Auth = append(config.Auth, pubKey)
+	}
 
 	// add user/password authentication if specified in url
 	if u.User != nil {
