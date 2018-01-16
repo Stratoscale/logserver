@@ -74,12 +74,6 @@
   version = "v1.2.0"
 
 [[projects]]
-  name = "github.com/test-go/testify"
-  packages = ["assert","require"]
-  revision = "69483b4bd14f5845b5a1e55bca19e954e827f1d0"
-  version = "v1.1.4"
-
-[[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["curve25519","ed25519","ed25519/internal/edwards25519","ssh","ssh/terminal"]
@@ -94,6 +88,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "053e1969a300cc212b58c87a48b06248e7df50038e986204331ac5f9d6f4fe6e"
+  inputs-digest = "eec32782436b1dce48aef84aa5e8e529c37a022f1ea864e64c62094395ffe0d3"
   solver-name = "gps-cdcl"
   solver-version = 1

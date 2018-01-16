@@ -14,8 +14,8 @@ import (
 	"github.com/Stratoscale/logserver/router"
 	"github.com/Stratoscale/logserver/source"
 	"github.com/gorilla/websocket"
-	"github.com/test-go/testify/assert"
-	"github.com/test-go/testify/require"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func mustParseTime(s string) *time.Time {
