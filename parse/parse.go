@@ -1,6 +1,7 @@
 package parse
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -23,6 +24,7 @@ type Config struct {
 	JsonMapping map[string]string `json:"json_mapping"`
 	Regexp      string            `json:"regexp"`
 	TimeFormats []string          `json:"time_formats"`
+	AppendArgs  bool              `json:"append_args"`
 }
 
 type Parse []parser
@@ -97,14 +99,20 @@ func (p *parser) parseJson(line []byte) *Log {
 	}
 	log := new(Log)
 	var ok bool
-	if log.Msg, ok = j[p.JsonMapping[KeyMsg]].(string); !ok {
+
+	msgKey := p.JsonMapping[KeyMsg]
+	if log.Msg, ok = j[msgKey].(string); !ok {
 		return nil
 	}
+	delete(j, msgKey)
+
 	if jsonKey, ok := p.JsonMapping[KeyLevel]; ok {
 		if log.Level, ok = j[jsonKey].(string); !ok {
 			return nil
 		}
+		delete(j, jsonKey)
 	}
+
 	if jsonKey, ok := p.JsonMapping[KeyTime]; ok {
 		switch t := j[jsonKey].(type) {
 		case float64:
@@ -116,10 +124,16 @@ func (p *parser) parseJson(line []byte) *Log {
 		case string:
 			log.parseTime(p.TimeFormats, t)
 		}
+		delete(j, jsonKey)
 	}
 	if jsonKey, ok := p.JsonMapping[KeyArgs]; ok {
 		log.injectArgs(j[jsonKey])
 	}
+
+	if p.AppendArgs {
+		log.Msg += args(j)
+	}
+
 	return log
 }
 
@@ -148,4 +162,12 @@ func (p *parser) parseRegexp(line []byte) *Log {
 		}
 	}
 	return log
+}
+
+func args(j map[string]interface{}) string {
+	buf := bytes.NewBuffer(nil)
+	for key, val := range j {
+		buf.WriteString(fmt.Sprintf(" %v=%v", key, val))
+	}
+	return buf.String()
 }
