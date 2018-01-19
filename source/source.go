@@ -3,6 +3,8 @@ package source
 import (
 	"net/url"
 
+	"fmt"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/Stratoscale/logserver/filesystem"
 	"github.com/Stratoscale/logserver/filesystem/targz"
@@ -35,9 +37,14 @@ func New(c []Config) (Sources, error) {
 		var fs filesystem.FileSystem
 		switch u.Scheme {
 		case "file":
-			fs, err = filesystem.NewLocalFS(u)
+			fs, err = filesystem.NewLocal(u)
 		case "sftp", "ssh":
 			fs, err = filesystem.NewSFTP(u)
+		case "nginx+http", "nginx+https":
+			if srcDesc.OpenTarFiles {
+				return nil, fmt.Errorf("can't have 'open_tar_files' option over http")
+			}
+			fs, err = filesystem.NewNginx(u)
 		}
 		if err != nil {
 			return nil, err

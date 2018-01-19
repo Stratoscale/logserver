@@ -19,3 +19,15 @@ client: build
 
 build-fast:
 	docker build ./ -f Dockerfile.fast -t logserver
+
+run-nginx:
+	docker run \
+		--name nginx \
+		--rm \
+		-v $(PWD)/example/nginx:/web:ro \
+		-v $(PWD)/example/nginx/nginx.conf:/etc/nginx/nginx.conf:ro \
+		-p 8001:80 \
+		-p 8002:81 \
+		-u root \
+		--entrypoint nginx \
+		nginx:1.12-alpine -g 'daemon off;'

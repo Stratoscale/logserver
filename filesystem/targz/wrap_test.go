@@ -15,7 +15,7 @@ import (
 func TestWrap(t *testing.T) {
 	u, err := url.Parse("file://../../example/log3")
 	require.Nil(t, err)
-	fs, err := filesystem.NewLocalFS(u)
+	fs, err := filesystem.NewLocal(u)
 	require.Nil(t, err)
 	fs = New(fs)
 

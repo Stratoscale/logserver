@@ -48,12 +48,14 @@ The json should be a dict with the following keys:
 Logserver supports different type of log sources, each has a different scheme:
 
 - `file://` (URL string): Address in local file system.
-                          The file location can be absolute with `file:///var/log` or relative to the firectory
-                          from which the command line was executed: `file://./log`.
+    The file location can be absolute with `file:///var/log` or relative to the directory
+    from which the command line was executed: `file://./log`.
 - `sftp://` (URL string): Address of sftp server (or SSH server).
-                          The URL can contain a user name and password and path from the system root.
-                          For example: `sftp://user:password@example.com:22/var/log`
+    The URL can contain a user name and password and path from the system root.
+    For example: `sftp://user:password@example.com:22/var/log`
 - `ssh://` (URL string): Address of ssh server. Obey the same rules as sftp server.
+- `nginx+http://`, `nginx+https://` (URL string): Address of an nginx configured to serve files with `autoindex on;`
+    directive. It supports both HTML and JSON `autoindex_format`.
 
 #### Parser Dict
 
