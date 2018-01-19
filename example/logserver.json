@@ -13,6 +13,14 @@
       "name": "node3",
       "url": "file://./example/log3",
       "open_tar_files": true
+    },
+    {
+      "name": "nginx-html",
+      "url": "nginx+http://localhost:8001"
+    },
+    {
+      "name": "nginx-json",
+      "url": "nginx+http://localhost:8002"
     }
   ],
   "parsers": [
