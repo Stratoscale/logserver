@@ -50,6 +50,24 @@
   revision = "2788f0dbd16903de03cb8186e5c7d97b69ad387b"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/motemen/go-loghttp"
+  packages = ["."]
+  revision = "974ac5ceac271576caabe1c0bddf2b7eed471f67"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/motemen/go-nuts"
+  packages = ["roundtime"]
+  revision = "49f2fd6dca147d5d713238550a422944d0581f69"
+
+[[projects]]
+  name = "github.com/patrickmn/go-cache"
+  packages = ["."]
+  revision = "a3647f8e31d79543b2d0f0ae2fe5c379d72cedc0"
+  version = "v2.1.0"
+
+[[projects]]
   name = "github.com/pkg/errors"
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
@@ -88,6 +106,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "eec32782436b1dce48aef84aa5e8e529c37a022f1ea864e64c62094395ffe0d3"
+  inputs-digest = "c9078d4d35e1d9cfd75b46e919a073fc4499d3d0be50b324c8e3c1519348bf20"
   solver-name = "gps-cdcl"
   solver-version = 1

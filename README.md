@@ -35,6 +35,7 @@ The json should be a dict with the following keys:
 
 - `sources` (list of [source dicts](./README.md#source-dict)): Logs sources, from which the logs are merged ans served.
 - `parsers` (list of [parser dicts](./README.md#parser-dict)): Which parsers to apply to the log files.
+- `global` (dict of [attributes](./README.md#global-dict)): General configuration
 
 #### Source Dict
 
@@ -84,3 +85,10 @@ The UI expects the following keys in each parsed log:
 - `level`: Log level.
 - `args`: If args are given, they will be injected into the log msg. Args value can be `[]interface{}`
           Or `map[string]interface{}`, According to the log message.
+
+#### Global Dict
+
+- `content_batch_size`
+- `content_batch_time`
+- `search_max_size`
+- `cache_expiration`

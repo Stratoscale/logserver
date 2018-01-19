@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"path/filepath"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/Stratoscale/logserver/debug"
 	"github.com/Stratoscale/logserver/parse"
@@ -25,6 +27,7 @@ const (
 	defaultContentBatchSize = 2000
 	defaultContentBatchTime = time.Second * 2
 	defaultSearchMaxSize    = 5000
+	defaultCacheExpiration  = time.Minute * 5
 )
 
 // Config are global configuration parameter for logserver
@@ -32,19 +35,28 @@ type Config struct {
 	ContentBatchSize int           `json:"content_batch_size"`
 	ContentBatchTime time.Duration `json:"content_batch_time"`
 	SearchMaxSize    int           `json:"search_max_size"`
+	CacheExpiration  time.Duration `json:"cache_expiration"`
 }
 
 // New returns a new websocket handler
-func New(c Config, s source.Sources, p parse.Parse) http.Handler {
-	h := &handler{Config: c, source: s, parse: p}
-	if h.ContentBatchSize == 0 {
-		h.ContentBatchSize = defaultContentBatchSize
+func New(c Config, source source.Sources, parser parse.Parse) http.Handler {
+	if c.ContentBatchSize == 0 {
+		c.ContentBatchSize = defaultContentBatchSize
 	}
-	if h.ContentBatchTime == 0 {
-		h.ContentBatchTime = defaultContentBatchTime
+	if c.ContentBatchTime == 0 {
+		c.ContentBatchTime = defaultContentBatchTime
 	}
-	if h.SearchMaxSize == 0 {
-		h.SearchMaxSize = defaultSearchMaxSize
+	if c.SearchMaxSize == 0 {
+		c.SearchMaxSize = defaultSearchMaxSize
+	}
+	if c.CacheExpiration == 0 {
+		c.CacheExpiration = defaultCacheExpiration
+	}
+	h := &handler{
+		Config: c,
+		source: source,
+		parse:  parser,
+		cache:  NewCache(c.CacheExpiration),
 	}
 	return h
 }
@@ -53,6 +65,7 @@ type handler struct {
 	Config
 	source source.Sources
 	parse  parse.Parse
+	cache  Cache
 }
 
 // Path describes a file path
@@ -69,11 +82,17 @@ type Meta struct {
 
 // Request from client
 type Request struct {
-	Meta       `json:"meta"`
-	Path       Path      `json:"path"`
-	Regexp     string    `json:"regexp"`
-	FilterFS   []string  `json:"filter_fs"`
-	FilterTime TimeRange `json:"filter_time"`
+	Meta         `json:"meta"`
+	Path         Path      `json:"path"`
+	Regexp       string    `json:"regexp"`
+	FilterSource []string  `json:"filter_fs"`
+	FilterTime   TimeRange `json:"filter_time"`
+
+	filterSourceMap map[string]bool
+}
+
+func (r *Request) Init() {
+	r.filterSourceMap = sourceSet(r.FilterSource)
 }
 
 type TimeRange struct {
@@ -89,6 +108,14 @@ type Response struct {
 	Error string      `json:"error,omitempty"`
 }
 
+func (r Response) FilterSources(sources map[string]bool) *Response {
+	copy(r.Tree, r.Tree)
+	for i, file := range r.Tree {
+		r.Tree[i] = file.FilterSources(sources)
+	}
+	return &r
+}
+
 // File describes a file in multiple file systems
 type File struct {
 	Key   string `json:"key"`
@@ -96,6 +123,17 @@ type File struct {
 	IsDir bool   `json:"is_dir"`
 	// Instances are all the instances of the same file in different file systems
 	Instances []FileInstance `json:"instances"`
+}
+
+func (f File) FilterSources(sources map[string]bool) *File {
+	instances := make([]FileInstance, 0, len(sources))
+	for _, instance := range f.Instances {
+		if sources[instance.FS] {
+			instances = append(instances, instance)
+		}
+	}
+	f.Instances = instances
+	return &f
 }
 
 // FileInstance describe a file on a filesystem
@@ -130,6 +168,8 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			log.WithError(err).Errorf("Failed read")
 			return
 		}
+		req.Init()
+
 		// cancel the last serving up on a new request
 		if cancel != nil {
 			cancel()
@@ -175,26 +215,40 @@ func (h *handler) serve(ctx context.Context, req Request, send func(*Response)) 
 }
 
 func (h *handler) serveTree(ctx context.Context, req Request, send func(*Response)) {
-	var (
-		c  = newCombiner()
-		wg sync.WaitGroup
-	)
-	sources := filterNodes(h.source, req.FilterFS)
-	wg.Add(len(sources))
-	for _, src := range sources {
-		go func(src source.Source) {
-			defer wg.Done()
-			h.srcTree(ctx, req, src, c)
-		}(src)
+	var cacheKey = fmt.Sprintf("src-tree/%s", filepath.Join(req.Path...))
+
+	resp, ok := h.cache.Get(cacheKey)
+	if !ok {
+		// if not cached, load from all sources
+		var (
+			c       = newCombiner()
+			wg      sync.WaitGroup
+			sources = h.source
+		)
+		wg.Add(len(sources))
+		for _, src := range sources {
+			go func(src source.Source) {
+				defer wg.Done()
+				h.srcTree(ctx, req, src, c)
+			}(src)
+		}
+		wg.Wait()
+		log.Debugf("Serve tree for %v with %d files", req.Path, len(c.files))
+		resp = &Response{Meta: req.Meta, Tree: c.files}
 	}
-	wg.Wait()
-	log.Debugf("Serve tree for %v with %d files", req.Path, len(c.files))
-	send(&Response{Meta: req.Meta, Tree: c.files})
+
+	h.cache.Set(cacheKey, resp)
+	if len(req.FilterSource) > 0 {
+		resp = resp.FilterSources(req.filterSourceMap)
+	}
+	send(resp)
 }
 
+// srcTree returns a file tree from a single source
 func (h *handler) srcTree(ctx context.Context, req Request, src source.Source, c *combiner) {
 	const sep = string(os.PathSeparator)
 	path := src.FS.Join(req.Path...)
+
 	walker := fs.WalkFS(path, src.FS)
 	for walker.Step() {
 		if err := ctx.Err(); err != nil {
@@ -247,7 +301,7 @@ func (c *combiner) add(f File, instance FileInstance) {
 
 func (h *handler) serveContent(ctx context.Context, req Request, send func(*Response)) {
 	wg := sync.WaitGroup{}
-	sources := filterNodes(h.source, req.FilterFS)
+	sources := filterSources(h.source, req.filterSourceMap)
 	wg.Add(len(sources))
 	for _, src := range sources {
 		go func(src source.Source) {
@@ -268,7 +322,7 @@ func (h *handler) search(ctx context.Context, req Request, send func(*Response))
 		})
 		return
 	}
-	nodes := filterNodes(h.source, req.FilterFS)
+	nodes := filterSources(h.source, req.filterSourceMap)
 	wg := sync.WaitGroup{}
 	wg.Add(len(nodes))
 	for _, node := range nodes {
@@ -381,17 +435,21 @@ func (h *handler) read(ctx context.Context, send func(*Response), req Request, n
 	send(&Response{Meta: respMeta, Lines: logLines})
 }
 
-func filterNodes(sources []source.Source, filterSources []string) []source.Source {
+func sourceSet(sourceList []string) map[string]bool {
+	sources := make(map[string]bool, len(sourceList))
+	for _, node := range sourceList {
+		sources[node] = true
+	}
+	return sources
+}
+
+func filterSources(sources []source.Source, filterSources map[string]bool) []source.Source {
 	if len(filterSources) == 0 {
 		return sources
 	}
-	nodes := make(map[string]bool, len(filterSources))
-	for _, node := range filterSources {
-		nodes[node] = true
-	}
 	ret := make([]source.Source, 0, len(filterSources))
 	for _, src := range sources {
-		if nodes[src.Name] {
+		if filterSources[src.Name] {
 			ret = append(ret, src)
 		}
 	}
