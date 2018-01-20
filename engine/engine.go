@@ -104,15 +104,19 @@ type TimeRange struct {
 type Response struct {
 	Meta  `json:"meta"`
 	Lines []parse.Log `json:"lines,omitempty"`
-	Tree  []*File     `json:"tree,omitempty"`
+	Files []*File     `json:"tree,omitempty"`
 	Error string      `json:"error,omitempty"`
 }
 
 func (r Response) FilterSources(sources map[string]bool) *Response {
-	copy(r.Tree, r.Tree)
-	for i, file := range r.Tree {
-		r.Tree[i] = file.FilterSources(sources)
+	files := make([]*File, 0, len(r.Files))
+	for _, file := range r.Files {
+		// add file to files only if it exists
+		if f := file.FilterSources(sources); f != nil {
+			files = append(files, f)
+		}
 	}
+	r.Files = files
 	return &r
 }
 
@@ -131,6 +135,10 @@ func (f File) FilterSources(sources map[string]bool) *File {
 		if sources[instance.FS] {
 			instances = append(instances, instance)
 		}
+	}
+	// if file has no instances after filter - there is no actual file
+	if len(instances) == 0 {
+		return nil
 	}
 	f.Instances = instances
 	return &f
@@ -234,7 +242,7 @@ func (h *handler) serveTree(ctx context.Context, req Request, send func(*Respons
 		}
 		wg.Wait()
 		log.Debugf("Serve tree for %v with %d files", req.Path, len(c.files))
-		resp = &Response{Meta: req.Meta, Tree: c.files}
+		resp = &Response{Meta: req.Meta, Files: c.files}
 	}
 
 	h.cache.Set(cacheKey, resp)

@@ -183,7 +183,7 @@ func TestHandler(t *testing.T) {
 			want: []engine.Response{
 				{
 					Meta: engine.Meta{ID: 9, Action: "get-file-tree"},
-					Tree: []*engine.File{
+					Files: []*engine.File{
 						{
 							Key:       "dir1",
 							Path:      engine.Path{"dir1"},
@@ -227,7 +227,7 @@ func TestHandler(t *testing.T) {
 			want: []engine.Response{
 				{
 					Meta: engine.Meta{ID: 9, Action: "get-file-tree"},
-					Tree: []*engine.File{
+					Files: []*engine.File{
 						{
 							Key:       "service1.log",
 							Path:      engine.Path{"service1.log"},
@@ -260,8 +260,8 @@ func TestHandler(t *testing.T) {
 func sortResp(responses []engine.Response) {
 	sort.Slice(responses, func(i, j int) bool { return strings.Compare(responses[i].Meta.FS, responses[j].Meta.FS) == -1 })
 	for _, resp := range responses {
-		sort.Slice(resp.Tree, func(i, j int) bool { return strings.Compare(resp.Tree[i].Key, resp.Tree[j].Key) == -1 })
-		for _, file := range resp.Tree {
+		sort.Slice(resp.Files, func(i, j int) bool { return strings.Compare(resp.Files[i].Key, resp.Files[j].Key) == -1 })
+		for _, file := range resp.Files {
 			sort.Slice(file.Instances, func(i, j int) bool { return strings.Compare(file.Instances[i].FS, file.Instances[j].FS) == -1 })
 		}
 	}
