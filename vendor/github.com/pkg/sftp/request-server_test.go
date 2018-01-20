@@ -131,7 +131,7 @@ func TestRequestWriteEmpty(t *testing.T) {
 	p := clientRequestServerPair(t)
 	defer p.Close()
 	n, err := putTestFile(p.cli, "/foo", "")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 0, n)
 	r := p.testHandler()
 	f, err := r.fetch("/foo")
@@ -139,18 +139,24 @@ func TestRequestWriteEmpty(t *testing.T) {
 		assert.False(t, f.isdir)
 		assert.Equal(t, f.content, []byte(""))
 	}
+	// lets test with an error
+	writeErr = os.ErrInvalid
+	n, err = putTestFile(p.cli, "/bar", "")
+	assert.Error(t, err)
+	writeErr = nil
 }
 
-// needs fail check
 func TestRequestFilename(t *testing.T) {
 	p := clientRequestServerPair(t)
 	defer p.Close()
 	_, err := putTestFile(p.cli, "/foo", "hello")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	r := p.testHandler()
 	f, err := r.fetch("/foo")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, f.Name(), "foo")
+	f, err = r.fetch("/bar")
+	assert.Error(t, err)
 }
 
 func TestRequestRead(t *testing.T) {
@@ -280,11 +286,12 @@ func TestRequestFstat(t *testing.T) {
 	fp, err := p.cli.Open("/foo")
 	assert.Nil(t, err)
 	fi, err := fp.Stat()
-	assert.Nil(t, err)
-	assert.Equal(t, fi.Name(), "foo")
-	assert.Equal(t, fi.Size(), int64(5))
-	assert.Equal(t, fi.Mode(), os.FileMode(0644))
-	assert.NoError(t, testOsSys(fi.Sys()))
+	if assert.NoError(t, err) {
+		assert.Equal(t, fi.Name(), "foo")
+		assert.Equal(t, fi.Size(), int64(5))
+		assert.Equal(t, fi.Mode(), os.FileMode(0644))
+		assert.NoError(t, testOsSys(fi.Sys()))
+	}
 }
 
 func TestRequestStatFail(t *testing.T) {
