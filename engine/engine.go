@@ -400,26 +400,26 @@ func (h *handler) read(ctx context.Context, send func(*Response), req Request, n
 		if err := ctx.Err(); err != nil {
 			return
 		}
-		log := h.parse.Parse(path, scanner.Bytes())
+		line := h.parse.Parse(path, scanner.Bytes())
 
 		// if a search was defined, check for match and if no match was found continue
 		// without sending the line
-		if re != nil && !re.MatchString(log.Msg) {
+		if re != nil && !re.MatchString(line.Msg) {
 			lineNumber += 1
 			fileOffset += len(scanner.Bytes())
 			continue
 		}
 
-		log.FileName = path
-		log.Offset = fileOffset
-		log.FS = node.Name
-		log.Line = lineNumber
+		line.FileName = path
+		line.Offset = fileOffset
+		line.FS = node.Name
+		line.Line = lineNumber
 
-		if filterOutTime(log, req.FilterTime) {
+		if filterOutTime(line, req.FilterTime) {
 			continue
 		}
 
-		logLines = append(logLines, *log)
+		logLines = append(logLines, *line)
 		lineNumber += 1
 		fileOffset += len(scanner.Bytes())
 
@@ -432,7 +432,7 @@ func (h *handler) read(ctx context.Context, send func(*Response), req Request, n
 			lastRespTime = time.Now()
 		}
 		// max search lines exceeded
-		if re != nil && lineNumber > h.SearchMaxSize {
+		if re != nil && len(logLines) > h.SearchMaxSize {
 			return
 		}
 	}

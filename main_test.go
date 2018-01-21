@@ -70,7 +70,8 @@ func TestHandler(t *testing.T) {
 							Line:     1,
 							Offset:   0,
 						},
-						{Msg: "data disk <disk: hostname=stratonode2.node.strato, ID=2d03c436-c197-464f-9ad0-d861e650cd61, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True",
+						{
+							Msg:      "data disk <disk: hostname=stratonode2.node.strato, ID=2d03c436-c197-464f-9ad0-d861e650cd61, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True",
 							Level:    "INFO",
 							Time:     mustParseTime("2017-12-25T16:23:05+02:00"),
 							FS:       "node1",
@@ -78,7 +79,8 @@ func TestHandler(t *testing.T) {
 							Line:     2,
 							Offset:   699,
 						},
-						{Msg: "data disk <disk: hostname=stratonode0.node.strato, ID=f3d510c7-1185-4942-b349-0de055165f78, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True",
+						{
+							Msg:      "data disk <disk: hostname=stratonode0.node.strato, ID=f3d510c7-1185-4942-b349-0de055165f78, path=/dev/sdc, type=mancala> was found in distributionID:0 table version:1, setting inTable=True",
 							Level:    "INFO",
 							Time:     mustParseTime("2017-12-25T16:23:05+02:00"),
 							FS:       "node1",
@@ -140,7 +142,25 @@ func TestHandler(t *testing.T) {
 			},
 		},
 		{
-			name:    "search / filter node",
+			name:    "search/long file",
+			message: `{"meta":{"action":"search","id":9},"path":[], "regexp": "zzzzzzz"}`,
+			want: []engine.Response{
+				{
+					Meta: engine.Meta{ID: 9, Action: "search", FS: "node1", Path: engine.Path{"dir1", "service3.log"}},
+					Lines: []parse.Log{
+						{
+							Msg:      `{"msg": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"}`,
+							FS:       "node1",
+							FileName: "dir1/service3.log",
+							Line:     8965,
+							Offset:   977076,
+						},
+					},
+				},
+			},
+		},
+		{
+			name:    "search/filter node",
 			message: `{"meta":{"action":"search","id":9},"path":[],"regexp":"2d03c436-c197-464f-9ad0-d861e650cd61","filter_fs":["node1"]}`,
 			want: []engine.Response{
 				{
@@ -159,7 +179,7 @@ func TestHandler(t *testing.T) {
 			},
 		},
 		{
-			name:    "search regexp",
+			name:    "search/regexp",
 			message: `{"meta":{"action":"search","id":9},"path":[], "regexp": "2d03c436-[c197]+-464f-9ad0-d861e650cd61"}`,
 			want: []engine.Response{
 				{
@@ -194,7 +214,7 @@ func TestHandler(t *testing.T) {
 							Key:       "dir1/service3.log",
 							Path:      engine.Path{"dir1", "service3.log"},
 							IsDir:     false,
-							Instances: []engine.FileInstance{{Size: 0, FS: "node1"}},
+							Instances: []engine.FileInstance{{Size: 986150, FS: "node1"}},
 						},
 						{
 							Key:       "mancala.stratolog",
@@ -244,12 +264,8 @@ func TestHandler(t *testing.T) {
 		require.Nil(t, conn.WriteMessage(1, []byte(tt.message)))
 		var got []engine.Response
 		for i := 0; i < len(tt.want); i++ {
-			select {
-			case gotOne := <-get(t, conn):
-				got = append(got, gotOne)
-			case <-time.After(time.Second):
-				t.Fatal("no response!")
-			}
+			gotOne := <-get(t, conn)
+			got = append(got, gotOne)
 		}
 		sortResp(got)
 		sortResp(tt.want)
