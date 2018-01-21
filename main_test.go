@@ -48,10 +48,6 @@ func TestHandler(t *testing.T) {
 	s := httptest.NewServer(h)
 	defer s.Close()
 
-	conn, httpResp, err := websocket.DefaultDialer.Dial("ws://"+s.Listener.Addr().String()+"/ws", nil)
-	require.Nil(t, err)
-	assert.Equal(t, httpResp.StatusCode, http.StatusSwitchingProtocols)
-
 	tests := []struct {
 		name    string
 		message string
@@ -272,8 +268,17 @@ func TestHandler(t *testing.T) {
 		},
 	}
 
+	addr := "ws://" + s.Listener.Addr().String() + "/ws"
+
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			conn, httpResp, err := websocket.DefaultDialer.Dial(addr, nil)
+			require.Nil(t, err)
+			assert.Equal(t, httpResp.StatusCode, http.StatusSwitchingProtocols)
+
+			t.Parallel()
+
 			require.Nil(t, conn.WriteMessage(1, []byte(tt.message)))
 			var got []engine.Response
 			for i := 0; i < len(tt.want); i++ {
