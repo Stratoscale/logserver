@@ -27,36 +27,28 @@ class Breadcrumbs extends Component {
 
   render() {
     const {location, files} = this.props
-    if (location.pathname.startsWith('/view')) {
-      const filename = queryString.parse(location.search).file
+    const {search}          = queryString.parse(location.search)
+
+    if (search) {
       return (
         <Breadcrumb style={{margin: '16px 0'}} separator=">">
-          <Breadcrumb.Item><Link to={'/files/'}>Home</Link></Breadcrumb.Item>
-          <Breadcrumb.Item>{filename}</Breadcrumb.Item>
+          <Breadcrumb.Item><Link to={'/'}>Home</Link></Breadcrumb.Item>
+          <Breadcrumb.Item>Search Results</Breadcrumb.Item>
         </Breadcrumb>
       )
-    } else if (location.pathname.startsWith('/files')) {
-      const path = location.pathname.split('/').filter(Boolean).map(item => item === 'files' ? 'Home' : item)
+    } else {
+      const path = ['Home'].concat(location.pathname.split('/').filter(Boolean))
       return (
         <Breadcrumb style={{margin: '16px 0'}} separator=">">
           {path.map((pathPart, i) => {
-            return <Breadcrumb.Item key={pathPart}><Link to={`/files/${path.slice(1, i + 1).join('/')}`}>{pathPart}</Link></Breadcrumb.Item>
+            return <Breadcrumb.Item key={pathPart}><Link to={`/${path.slice(1, i + 1).join('/')}`}>{pathPart}</Link></Breadcrumb.Item>
           })}
           {files.size ? <Breadcrumb.Item><input className="tree-search" placeholder="filter..."
                                                 onChange={this.handleChange}/>
           </Breadcrumb.Item> : null}
         </Breadcrumb>
       )
-
-    } else if (location.pathname.startsWith('/search')) {
-      return (
-        <Breadcrumb style={{margin: '16px 0'}} separator=">">
-          <Breadcrumb.Item><Link to={'/files/'}>Home</Link></Breadcrumb.Item>
-          <Breadcrumb.Item>Search Results</Breadcrumb.Item>
-        </Breadcrumb>
-      )
     }
-    return null
   }
 }
 
@@ -68,25 +60,63 @@ class Breadcrumbs extends Component {
   clearSearchResults,
 })
 class Home extends Component {
-  handleSearch = (e) => {
-    this.props.setSearch(e.target.value)
+  handleSearch = ({target: {value}}) => {
+    this.props.setSearch(value)
     this.props.clearSearchResults()
     this.props.send(API_ACTIONS.SEARCH, {
       path:   [],
-      regexp: e.target.value,
+      regexp: value,
     })
-    if (e.target.value) {
-      navigate('/search')
+
+    if (value) {
+      const currentSearch = queryString.stringify({search: value})
+      navigate(`/?${currentSearch}`)
     } else {
       navigate('/')
     }
+  }
+
+  componentDidMount() {
+    const {location} = this.props
+    const {search}   = queryString.parse(location.search)
+
+    this.props.send(API_ACTIONS.GET_FILE_TREE, {
+      base_path: [],
+    })
+
+    if (search) {
+      this.handleSearch({target: {value: search}})
+    }
+  }
+
+  componentWillReceiveProps(nextProps) {
+    const {location} = nextProps
+    if (!location.search) {
+      this.props.setSearch('')
+      this.props.clearSearchResults()
+    }
+  }
+
+  _renderMainComponent = (props) => {
+    const {location} = this.props
+    const {search}   = queryString.parse(location.search)
+
+    if (search) {
+      return (
+        <SearchView {...props}/>
+      )
+    }
+
+    return (
+      <FileTree {...props}/>
+    )
   }
 
   render() {
     return (
       <Layout className="layout home">
         <Header>
-          <div className="logo">Log Server</div>
+          {this.props.requesting ? <div className="logo">REQUESTING</div> : <div className="logo">Log Server</div>}
           <Input
             placeholder="Search"
             className="search"
@@ -99,10 +129,9 @@ class Home extends Component {
           <Breadcrumbs/>
           <div className="main-content" style={{background: '#fff', padding: 24, minHeight: 280}}>
             <Switch>
-              <Route path="/files/*" component={FileTree} exact={false}/>
-              <Route path="/search" component={SearchView} exact={true}/>
+              <Route path="/*" render={this._renderMainComponent} exact={false}/>
               <Redirect to={{
-                pathname: '/files/',
+                pathname: '/',
               }}/>}/>
             </Switch>
           </div>

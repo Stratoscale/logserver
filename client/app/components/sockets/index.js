@@ -1,11 +1,11 @@
 import {Component} from 'react'
 import {connect} from 'react-redux'
-import {addSearchResults, setContent, setFiles, socketReady} from 'sockets/socket-actions'
+import {addSearchResults, receiveRequest, setContent, setFiles, socketReady} from 'sockets/socket-actions'
 import {API_ACTIONS} from 'consts'
 
 let socket = null
 
-@connect(null, {socketReady, setFiles, setContent, addSearchResults})
+@connect(null, {socketReady, setFiles, setContent, addSearchResults, receiveRequest})
 export default class SocketContainer extends Component {
   constructor(props) {
     super(props)
@@ -24,6 +24,7 @@ export default class SocketContainer extends Component {
       // Listen for messages
       socket.addEventListener('message', (event) => {
         const {meta, ...payload} = JSON.parse(event.data)
+        this.props.receiveRequest(meta.id)
         switch (meta.action) {
           case API_ACTIONS.GET_FILE_TREE: {
             this.props.setFiles(payload.tree)

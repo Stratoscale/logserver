@@ -13,6 +13,16 @@ export const currentPathSelector = createSelector(
   (app = Map()) => app.get('current_path')
 )
 
+const requestsSelector = createSelector(
+  appStateSelector,
+  (app = Map()) => app.get('requests')
+)
+
+export const hasPendingRequest = createSelector(
+  requestsSelector,
+  (requests = Map()) => requests.valueSeq().find(Boolean)
+)
+
 export const filesSelector = (state, props) => state.getIn(['files', 'tree'], List())
 export const indexSelector = (state, props) => state.getIn(['files', 'index'], Map())
 

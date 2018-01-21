@@ -21,7 +21,7 @@ module.exports = function getDevServer(ROOT_PATH, apiProxy) {
     port:               devServerPort,
     proxy:              {
       [`${basePath}/ws/*`]: {
-        target: 'http://localhost:8889',
+        target: 'http://localhost:8888',
         secure: false,
         // pathRewrite: {
         //   '^/ui': isUiBackendLocally ? '' : '/ui',     // rewrite path

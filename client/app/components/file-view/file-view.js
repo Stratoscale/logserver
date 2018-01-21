@@ -1,7 +1,6 @@
 import React, {Component} from 'react'
 import {List} from 'immutable'
-import _uniq from 'lodash/uniq'
-import {contentSelector, filesSelector, indexSelector, locationSelect} from 'selectors'
+import {contentSelector, filesSelector, hasPendingRequest, indexSelector, locationSelect} from 'selectors'
 import {connect} from 'react-redux'
 import {createStructuredSelector} from 'reselect'
 import queryString from 'query-string'
@@ -9,12 +8,15 @@ import {clearContent, send, setSearch} from 'sockets/socket-actions'
 import {API_ACTIONS} from 'consts'
 import {LinesView} from 'file-view/lines-view'
 import {FSBar} from 'fs-bar'
+import {navigate} from 'utils'
+import Loader from 'loader/loader'
 
 @connect(createStructuredSelector({
-  location: locationSelect,
-  content:  contentSelector,
-  files:    filesSelector,
-  index:    indexSelector,
+  location:   locationSelect,
+  content:    contentSelector,
+  files:      filesSelector,
+  index:      indexSelector,
+  requesting: hasPendingRequest,
 }), {
   send,
   setSearch,
@@ -29,25 +31,24 @@ class FileView extends Component {
   }
 
   componentWillMount() {
-    const {location} = this.props
-    const search     = queryString.parse(location.search)
-    const {fs}       = search
+    const {location, index, path, send} = this.props
+    const search                        = queryString.parse(location.search)
+    const {fs}                          = search
+
     if (fs) {
       this.setState({
         activeFs: [fs],
+      })
+    } else {
+      const instance = index.getIn([path.join('/'), 'instances'], List()).first()
+
+      this.setState({
+        activeFs: [instance.get('fs')],
       })
     }
 
     this.props.setSearch('')
     this.props.clearContent()
-  }
-
-  componentDidMount() {
-    const {send, path} = this.props
-
-    send(API_ACTIONS.GET_FILE_TREE, {
-      base_path: [],
-    })
 
     send(API_ACTIONS.GET_CONTENT, {
       path,
@@ -67,29 +68,35 @@ class FileView extends Component {
     }
   }
 
-  _handleToggle = (index, value) => {
-    let activeFs = [...this.state.activeFs]
-    if (value) {
-      activeFs.push(index)
-      activeFs = _uniq(activeFs)
-    } else {
-      activeFs = activeFs.filter(v => v !== index)
-    }
+  _handleToggle = (index) => {
+    const {location: {pathname}} = this.props
+
+    const fs = queryString.stringify({
+      fs: index,
+    })
+
+    const activeFs = [index]
 
     this.setState({
       activeFs,
     })
+
+    navigate(`${pathname}?${fs}`)
   }
 
   render() {
-    const {content, location, index} = this.props
-    let contentComponent             = <div>File is empty</div>
-    if (content && content.size > 0) {
-      contentComponent = <LinesView lines={content}/>
+    const {content, location, index, requesting} = this.props
+    let contentComponent                         = null
+    if (requesting) {
+      contentComponent = <Loader/>
+    } else if (content && content.size > 0) {
+      contentComponent = <LinesView lines={content} location={location}/>
+    } else {
+      contentComponent = <div>File is empty</div>
     }
 
-    const [_, ...path] = location.pathname.split('/').filter(Boolean)
-    const file         = index.get(path.join('/'))
+    const path = location.pathname.split('/').filter(Boolean)
+    const file = index.get(path.join('/'))
 
     return (
       <div className="file-view">

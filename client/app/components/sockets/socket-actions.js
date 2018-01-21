@@ -85,15 +85,22 @@ export function setContentId(id) {
   }
 }
 
-export function send(action, data) {
+export function sendRequest(id) {
+  return {
+    type:    ACTIONS.SEND_REQUEST,
+    payload: id,
+  }
+}
+
+export function receiveRequest(id) {
+  return {
+    type:    ACTIONS.RECEIVE_REQUEST,
+    payload: id,
+  }
+}
+
+function debouncedSend(action, data, id) {
   const thunk = (dispatch, getState) => {
-    const id = messageId++
-    if (action === API_ACTIONS.SEARCH) {
-      dispatch(setSearchId(id))
-    }
-    if (action === API_ACTIONS.GET_CONTENT) {
-      dispatch(setContentId(id))
-    }
     socket.send(JSON.stringify({
         meta: {
           action,
@@ -111,5 +118,24 @@ export function send(action, data) {
   }
 
   return thunk
+
+}
+
+export function send(action, data) {
+  return (dispatch, getState) => {
+    const id = messageId++
+
+    dispatch(sendRequest(id))
+
+    if (action === API_ACTIONS.SEARCH) {
+      dispatch(setSearchId(id))
+    }
+    if (action === API_ACTIONS.GET_CONTENT) {
+      dispatch(setContentId(id))
+    }
+
+    dispatch(debouncedSend(action, data, id))
+
+  }
 
 }

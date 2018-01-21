@@ -15,11 +15,11 @@ const File = ({path, is_dir, instances, key, showFullPath = false}) => {
   let content
   if (is_dir) {
     content = <span>
-      <Icon type={'folder'}/><Link to={`/files/${path.join('/')}`}>{filename}</Link>
+      <Icon type={'folder'}/><Link to={`/${path.join('/')}`}>{filename}</Link>
       {instances.map(instance => <Tag key={instance.fs}>{instance.fs}</Tag>)}
     </span>
   } else {
-    const viewURL = `/files/${path.join('/')}`
+    const viewURL = `/${path.join('/')}`
     content       = <span>
       <Icon type={'file'}/> <Link to={viewURL}>{filename}</Link>
       {instances.map(instance => <Tag key={instance.fs}><Link to={`${viewURL}?fs=${instance.fs}`}>{instance.fs}</Link></Tag>)}
@@ -42,17 +42,11 @@ const File = ({path, is_dir, instances, key, showFullPath = false}) => {
   setCurrentPath,
 })
 class FileTree extends Component {
-  componentDidMount() {
-    this.props.send(API_ACTIONS.GET_FILE_TREE, {
-      base_path: [],
-    })
-  }
-
   render() {
     const {index, files, match: {params}, filter} = this.props
 
     const path  = (params[0] || '').split('/').filter(Boolean)
-    const isDir = path.length === 0 || index.getIn([...path, 'is_dir'])
+    const isDir = path.length === 0 || index.getIn([path.join('/'), 'is_dir'])
     let data
     if (isDir) {
       data = files.getIn(path.concat(['files']), Map()).valueSeq().toJS()

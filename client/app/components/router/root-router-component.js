@@ -15,7 +15,3 @@ export default class RootRouterComponent extends React.Component {
     )
   }
 }
-
-
-
-

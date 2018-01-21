@@ -11,6 +11,8 @@ export const ACTIONS = keyMirror({
   SET_SEARCH:         null,
   SET_SEARCH_ID:      null,
   SET_SEARCH_RESULTS: null,
+  SEND_REQUEST:       null,
+  RECEIVE_REQUEST:    null,
 })
 
 export const API_ACTIONS = {

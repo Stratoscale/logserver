@@ -1,5 +1,5 @@
 import React, {Component} from 'react'
-import {filesSelector, fileSystemsSelector, locationSelect, searchResultsSelector} from 'selectors'
+import {filesSelector, locationSelect, searchResultsSelector} from 'selectors'
 import {connect} from 'react-redux'
 import {createStructuredSelector} from 'reselect'
 import {send} from 'sockets/socket-actions'
@@ -9,14 +9,12 @@ import {LinesView} from 'file-view/lines-view'
   location:    locationSelect,
   results:     searchResultsSelector,
   files:       filesSelector,
-  fileSystems: fileSystemsSelector,
 }), {
   send,
 })
 class SearchView extends Component {
   render() {
-    const {results, fileSystems} = this.props
-
+    const {results, ...props} = this.props
 
     if (!results.size) {
       return (
@@ -26,8 +24,7 @@ class SearchView extends Component {
 
     return (
       <div className="search-view">
-        {fileSystems}
-        <LinesView lines={results} showFileName/>
+        <LinesView {...props} lines={results} showFilename/>
       </div>
     )
   }
