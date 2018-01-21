@@ -1,58 +1,61 @@
 import React, {Component} from 'react'
-import {List} from 'immutable'
+import {List, Set} from 'immutable'
 import {contentSelector, filesSelector, hasPendingRequest, indexSelector, locationSelect} from 'selectors'
 import {connect} from 'react-redux'
 import {createStructuredSelector} from 'reselect'
 import queryString from 'query-string'
 import {clearContent, send, setSearch} from 'sockets/socket-actions'
-import {API_ACTIONS} from 'consts'
+import {API_ACTIONS, colorByLevel} from 'consts'
 import {LinesView} from 'file-view/lines-view'
 import {FSBar} from 'fs-bar'
 import {navigate} from 'utils'
 import Loader from 'loader/loader'
+import {Checkbox} from 'antd'
+
+const ALL_LEVELS = Set(['debug', 'info', 'warning', 'error'])
 
 @connect(createStructuredSelector({
   location:   locationSelect,
   content:    contentSelector,
   files:      filesSelector,
   index:      indexSelector,
-  requesting: hasPendingRequest,
+  requesting: hasPendingRequest(API_ACTIONS.GET_CONTENT),
 }), {
   send,
   setSearch,
   clearContent,
 })
 class FileView extends Component {
-  constructor(props) {
-    super(props)
-    this.state = {
-      activeFs: [],
-    }
+  state = {
+    activeFs:        [],
+    showLevels:      ALL_LEVELS,
+    showTimestamp:   true,
+    showLinenumbers: true,
   }
 
   componentWillMount() {
     const {location, index, path, send} = this.props
     const search                        = queryString.parse(location.search)
     const {fs}                          = search
+    let activeFs                        = []
 
     if (fs) {
-      this.setState({
-        activeFs: [fs],
-      })
+      activeFs = [fs]
     } else {
       const instance = index.getIn([path.join('/'), 'instances'], List()).first()
-
-      this.setState({
-        activeFs: [instance.get('fs')],
-      })
+      activeFs       = [instance.get('fs')]
     }
+
+    this.setState({
+      activeFs,
+    })
 
     this.props.setSearch('')
     this.props.clearContent()
 
     send(API_ACTIONS.GET_CONTENT, {
       path,
-      filter_fs: this.state.activeFs,
+      filter_fs: activeFs,
     })
   }
 
@@ -64,6 +67,18 @@ class FileView extends Component {
       send(API_ACTIONS.GET_CONTENT, {
         path,
         filter_fs: this.state.activeFs,
+      })
+    }
+  }
+
+  _handleLevelToggle = (index) => {
+    if (this.state.showLevels.includes(index)) {
+      this.setState({
+        showLevels: this.state.showLevels.delete(index),
+      })
+    } else {
+      this.setState({
+        showLevels: this.state.showLevels.add(index),
       })
     }
   }
@@ -90,7 +105,12 @@ class FileView extends Component {
     if (requesting) {
       contentComponent = <Loader/>
     } else if (content && content.size > 0) {
-      contentComponent = <LinesView lines={content} location={location}/>
+      contentComponent =
+        <LinesView lines={content}
+                   location={location}
+                   showLevels={this.state.showLevels}
+                   showLinenumbers={this.state.showLinenumbers}
+                   showTimestamp={this.state.showTimestamp}/>
     } else {
       contentComponent = <div>File is empty</div>
     }
@@ -107,6 +127,28 @@ class FileView extends Component {
           })).toJS()}
           onToggle={this._handleToggle}
         />
+        <div>
+          <FSBar onToggle={this._handleLevelToggle}
+                 className="levels"
+                 items={ALL_LEVELS.map(level => ({
+                   name:   level,
+                   active: this.state.showLevels.includes(level),
+                   color:  colorByLevel(level),
+                 })).toJS()}/>
+          <Checkbox checked={this.state.showLinenumbers} onChange={({target: {checked}}) => {
+            this.setState({
+              showLinenumbers: checked,
+            })
+          }}>Line Numbers</Checkbox>
+
+          <Checkbox checked={this.state.showTimestamp} onChange={({target: {checked}}) => {
+            this.setState({
+              showTimestamp: checked,
+            })
+          }}>Timestamps</Checkbox>
+
+
+        </div>
         {contentComponent}
       </div>
     )

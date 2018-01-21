@@ -18,9 +18,9 @@ const requestsSelector = createSelector(
   (app = Map()) => app.get('requests')
 )
 
-export const hasPendingRequest = createSelector(
+export const hasPendingRequest = type => createSelector(
   requestsSelector,
-  (requests = Map()) => requests.valueSeq().find(Boolean)
+  (requests = Map()) => requests.get(type)
 )
 
 export const filesSelector = (state, props) => state.getIn(['files', 'tree'], List())

@@ -60,12 +60,12 @@ function clearContent(state) {
   return state.set('content', List())
 }
 
-function sendRequest(state, {payload}) {
-  return state.set('requests', state.get('requests').set(payload, true))
+function sendRequest(state, {payload: {action}}) {
+  return state.setIn(['requests', action], true)
 }
 
-function receiveRequest(state, {payload}) {
-  return state.set('requests', state.get('requests').set(payload, false))
+function receiveRequest(state, {payload: {action}}) {
+  return state.setIn(['requests', action], false)
 }
 
 export const entities = createReducer(INITIAL_STATE, {

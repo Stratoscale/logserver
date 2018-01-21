@@ -85,17 +85,21 @@ export function setContentId(id) {
   }
 }
 
-export function sendRequest(id) {
+export function sendRequest(action) {
   return {
     type:    ACTIONS.SEND_REQUEST,
-    payload: id,
+    payload: {
+      action,
+    },
   }
 }
 
-export function receiveRequest(id) {
+export function receiveRequest(action) {
   return {
     type:    ACTIONS.RECEIVE_REQUEST,
-    payload: id,
+    payload: {
+      action,
+    },
   }
 }
 
@@ -125,7 +129,7 @@ export function send(action, data) {
   return (dispatch, getState) => {
     const id = messageId++
 
-    dispatch(sendRequest(id))
+    dispatch(sendRequest(action))
 
     if (action === API_ACTIONS.SEARCH) {
       dispatch(setSearchId(id))

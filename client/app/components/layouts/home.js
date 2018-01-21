@@ -1,4 +1,5 @@
 import React, {Component} from 'react'
+import _debounce from 'lodash/debounce'
 import {Input, Icon, Layout, Breadcrumb} from 'antd'
 import FileTree from 'file-tree'
 import {Route, Switch} from 'react-router'
@@ -21,9 +22,20 @@ const {Header, Content, Footer} = Layout
   setFilter,
 })
 class Breadcrumbs extends Component {
-  handleChange = (e) => {
-    this.props.setFilter(e.target.value)
+  state = {
+    filter: '',
   }
+
+  handleChange = (e) => {
+    this.setState({
+      filter: e.target.value,
+    })
+    this.updateFilter()
+  }
+
+  updateFilter = _debounce(() => {
+    this.props.setFilter(this.state.filter)
+  }, 300)
 
   render() {
     const {location, files} = this.props
@@ -44,6 +56,7 @@ class Breadcrumbs extends Component {
             return <Breadcrumb.Item key={pathPart}><Link to={`/${path.slice(1, i + 1).join('/')}`}>{pathPart}</Link></Breadcrumb.Item>
           })}
           {files.size ? <Breadcrumb.Item><input className="tree-search" placeholder="filter..."
+                                                value={this.state.query}
                                                 onChange={this.handleChange}/>
           </Breadcrumb.Item> : null}
         </Breadcrumb>
