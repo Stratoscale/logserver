@@ -198,6 +198,15 @@ func TestHandler(t *testing.T) {
 			},
 		},
 		{
+			name:    "search/not-found",
+			message: `{"meta":{"action":"search","id":9},"path":[], "regexp": "value that you won't found'"}`,
+			want: []engine.Response{
+				{
+					Meta: engine.Meta{ID: 9, Action: "search"},
+				},
+			},
+		},
+		{
 			name:    "get file tree",
 			message: `{"meta":{"action":"get-file-tree","id":9},"base_path":[],"filter_fs":["node1","node2"]}`,
 			want: []engine.Response{

@@ -13,6 +13,8 @@ import (
 
 	"path/filepath"
 
+	"sync/atomic"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/Stratoscale/logserver/debug"
 	"github.com/Stratoscale/logserver/parse"
@@ -207,18 +209,31 @@ func reader(conn *websocket.Conn, ch <-chan *Response) {
 
 func (h *handler) serve(ctx context.Context, req Request, send func(*Response)) {
 	defer debug.Time(log, "Request %+v", req.Meta)()
+
+	// if any message was sent
+	// type int32 because of atomic usage
+	var sentAny int32
+	countSend := func(resp *Response) {
+		send(resp)
+		atomic.StoreInt32(&sentAny, 1)
+	}
+
 	switch req.Action {
 	case "get-file-tree":
-		h.serveTree(ctx, req, send)
+		h.serveTree(ctx, req, countSend)
 
 	case "get-content":
-		h.serveContent(ctx, req, send)
+		h.serveContent(ctx, req, countSend)
 
 	case "search":
-		h.search(ctx, req, send)
+		h.search(ctx, req, countSend)
 	}
+
 	if err := ctx.Err(); err != nil {
 		log.Debugf("Request %d cancelled", req.ID)
+	} else if sentAny == 0 {
+		// if no response was sent return an empty response
+		send(&Response{Meta: req.Meta})
 	}
 }
 
@@ -444,6 +459,7 @@ func (h *handler) read(ctx context.Context, send func(*Response), req Request, n
 		return
 	}
 	send(&Response{Meta: respMeta, Lines: logLines})
+
 }
 
 func sourceSet(sourceList []string) map[string]bool {
