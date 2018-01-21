@@ -6,19 +6,18 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
-	"time"
-
-	"path/filepath"
-
 	"sync/atomic"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/Stratoscale/logserver/debug"
 	"github.com/Stratoscale/logserver/parse"
 	"github.com/Stratoscale/logserver/source"
+	"github.com/bluele/gcache"
 	"github.com/gorilla/websocket"
 	"github.com/kr/fs"
 )
@@ -29,7 +28,6 @@ const (
 	defaultContentBatchSize = 2000
 	defaultContentBatchTime = time.Second * 2
 	defaultSearchMaxSize    = 5000
-	defaultCacheExpiration  = time.Minute * 5
 )
 
 // Config are global configuration parameter for logserver
@@ -41,7 +39,7 @@ type Config struct {
 }
 
 // New returns a new websocket handler
-func New(c Config, source source.Sources, parser parse.Parse) http.Handler {
+func New(c Config, source source.Sources, parser parse.Parse, cache gcache.Cache) http.Handler {
 	if c.ContentBatchSize == 0 {
 		c.ContentBatchSize = defaultContentBatchSize
 	}
@@ -51,14 +49,11 @@ func New(c Config, source source.Sources, parser parse.Parse) http.Handler {
 	if c.SearchMaxSize == 0 {
 		c.SearchMaxSize = defaultSearchMaxSize
 	}
-	if c.CacheExpiration == 0 {
-		c.CacheExpiration = defaultCacheExpiration
-	}
 	h := &handler{
 		Config: c,
 		source: source,
 		parse:  parser,
-		cache:  NewCache(c.CacheExpiration),
+		cache:  cache,
 	}
 	return h
 }
@@ -67,7 +62,7 @@ type handler struct {
 	Config
 	source source.Sources
 	parse  parse.Parse
-	cache  Cache
+	cache  gcache.Cache
 }
 
 // Path describes a file path
@@ -240,11 +235,16 @@ func (h *handler) serve(ctx context.Context, req Request, send func(*Response)) 
 	}
 }
 
-func (h *handler) serveTree(ctx context.Context, req Request, send func(*Response)) {
-	var cacheKey = fmt.Sprintf("src-tree/%s", filepath.Join(req.Path...))
+type treeCacheKey string
 
-	resp, ok := h.cache.Get(cacheKey)
-	if !ok {
+func (h *handler) serveTree(ctx context.Context, req Request, send func(*Response)) {
+	var (
+		cacheKey = treeCacheKey(filepath.Join(req.Path...))
+		resp     *Response
+	)
+	if val, err := h.cache.Get(cacheKey); err == nil {
+		resp = val.(*Response)
+	} else {
 		// if not cached, load from all sources
 		var (
 			c       = newCombiner()
@@ -261,8 +261,11 @@ func (h *handler) serveTree(ctx context.Context, req Request, send func(*Respons
 		wg.Wait()
 		log.Debugf("Serve tree for %v with %d files", req.Path, len(c.files))
 		resp = &Response{Meta: req.Meta, Files: c.files}
-		h.cache.Set(cacheKey, resp)
+		if err := h.cache.Set(cacheKey, resp); err != nil {
+			log.WithError(err).Warnf("Set cache")
+		}
 	}
+
 	resp = resp.FilterSources(req.filterSourceMap)
 	resp.ID = req.ID
 	send(resp)

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/Stratoscale/logserver/filesystem"
+	"github.com/bluele/gcache"
 )
 
 var (
@@ -13,16 +14,16 @@ var (
 	reSuffix   = regexp.MustCompile(`\.tar(\.gz)?$`)
 )
 
-func New(inner filesystem.FileSystem) filesystem.FileSystem {
+func New(inner filesystem.FileSystem, cache gcache.Cache) filesystem.FileSystem {
 	return &wrap{
-		inner:    inner,
-		tarCache: make(map[string]filesystem.FileSystem),
+		inner: inner,
+		cache: cache,
 	}
 }
 
 type wrap struct {
-	inner    filesystem.FileSystem
-	tarCache map[string]filesystem.FileSystem
+	inner filesystem.FileSystem
+	cache gcache.Cache
 }
 
 func (w *wrap) ReadDir(dirname string) ([]os.FileInfo, error) {
@@ -74,22 +75,37 @@ func (w *wrap) Close() error {
 	return w.inner.Close()
 }
 
+type cacheKey string
+
 func (w *wrap) getTfs(dirname string) (filesystem.FileSystem, string, error) {
 	tarName, innerPath := split(dirname)
 	if tarName == "" {
 		return nil, dirname, nil
 	}
-	if w.tarCache[tarName] == nil {
+
+	var (
+		// key for storing tar files in cache
+		key = cacheKey(tarName)
+		fs  filesystem.FileSystem
+	)
+
+	if val, err := w.cache.Get(key); err == nil {
+		fs = val.(filesystem.FileSystem)
+	} else { // not in cache
 		f, err := w.inner.Open(tarName)
 		if err != nil {
 			return nil, "", err
 		}
-		w.tarCache[tarName], err = NewFS(f)
+		fs, err = NewFS(f)
 		if err != nil {
 			return nil, "", err
 		}
+		err = w.cache.Set(key, fs)
+		if err != nil {
+			log.WithError(err).Warn("Setting cache")
+		}
 	}
-	return w.tarCache[tarName], innerPath, nil
+	return fs, innerPath, nil
 }
 
 func split(dirname string) (tarName string, innerPath string) {

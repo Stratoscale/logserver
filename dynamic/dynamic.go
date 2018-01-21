@@ -11,6 +11,7 @@ import (
 	"github.com/Stratoscale/logserver/parse"
 	"github.com/Stratoscale/logserver/router"
 	"github.com/Stratoscale/logserver/source"
+	"github.com/bluele/gcache"
 )
 
 const (
@@ -22,7 +23,7 @@ type Config struct {
 	MarkFile string `json:"mark_file"`
 }
 
-func New(c Config, engineConfig engine.Config, p parse.Parse) (http.Handler, error) {
+func New(c Config, engineConfig engine.Config, p parse.Parse, cache gcache.Cache) (http.Handler, error) {
 	var err error
 	c.Root, err = filepath.Abs(c.Root)
 	if err != nil {
@@ -30,8 +31,9 @@ func New(c Config, engineConfig engine.Config, p parse.Parse) (http.Handler, err
 	}
 	h := &handler{
 		Config:       c,
-		parse:        p,
 		engineConfig: engineConfig,
+		parse:        p,
+		cache:        cache,
 	}
 	if h.MarkFile == "" {
 		h.MarkFile = defaultMarkFile
@@ -41,8 +43,9 @@ func New(c Config, engineConfig engine.Config, p parse.Parse) (http.Handler, err
 
 type handler struct {
 	Config
-	parse        parse.Parse
 	engineConfig engine.Config
+	parse        parse.Parse
+	cache        gcache.Cache
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +75,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 	}
-	src, err := source.New(srcConfig)
+	src, err := source.New(srcConfig, h.cache)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -82,7 +85,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	serverPath := root[len(h.Root):]
 
 	rtr, err := router.New(router.Config{
-		Engine:   engine.New(h.engineConfig, src, h.parse),
+		Engine:   engine.New(h.engineConfig, src, h.parse, h.cache),
 		BasePath: serverPath,
 	})
 	if err != nil {

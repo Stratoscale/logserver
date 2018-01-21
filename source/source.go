@@ -1,13 +1,13 @@
 package source
 
 import (
-	"net/url"
-
 	"fmt"
+	"net/url"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/Stratoscale/logserver/filesystem"
 	"github.com/Stratoscale/logserver/filesystem/targz"
+	"github.com/bluele/gcache"
 )
 
 var log = logrus.WithField("pkg", "config")
@@ -27,7 +27,7 @@ type Source struct {
 	FS   filesystem.FileSystem
 }
 
-func New(c []Config) (Sources, error) {
+func New(c []Config, cache gcache.Cache) (Sources, error) {
 	var s Sources
 	for _, srcDesc := range c {
 		u, err := url.Parse(srcDesc.URL)
@@ -51,7 +51,7 @@ func New(c []Config) (Sources, error) {
 		}
 		log.Infof("Opened: %s", u)
 		if srcDesc.OpenTarFiles {
-			fs = targz.New(fs)
+			fs = targz.New(fs, cache)
 		}
 		s = append(s, Source{srcDesc.Name, fs})
 	}

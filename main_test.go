@@ -13,6 +13,7 @@ import (
 	"github.com/Stratoscale/logserver/parse"
 	"github.com/Stratoscale/logserver/router"
 	"github.com/Stratoscale/logserver/source"
+	"github.com/bluele/gcache"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,14 +32,15 @@ func TestHandler(t *testing.T) {
 		logrus.StandardLogger().SetLevel(logrus.DebugLevel)
 	}
 	cfg := loadConfig("./example/logserver.json")
+	cache := gcache.New(0).Build()
 
-	sources, err := source.New(cfg.Sources)
+	sources, err := source.New(cfg.Sources, cache)
 	require.Nil(t, err)
 	parser, err := parse.New(cfg.Parsers)
 	require.Nil(t, err)
 
 	h, err := router.New(router.Config{
-		Engine: engine.New(engine.Config{}, sources, parser),
+		Engine: engine.New(engine.Config{}, sources, parser, cache),
 	})
 	require.Nil(t, err)
 

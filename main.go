@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 
-	"net"
-
 	"github.com/Sirupsen/logrus"
+	"github.com/Stratoscale/logserver/cache"
 	"github.com/Stratoscale/logserver/debug"
 	"github.com/Stratoscale/logserver/dynamic"
 	"github.com/Stratoscale/logserver/engine"
@@ -45,6 +45,7 @@ type config struct {
 	Sources []source.Config `json:"sources"`
 	Parsers []parse.Config  `json:"parsers"`
 	Dynamic dynamic.Config  `json:"dynamic"`
+	Cache   cache.Config    `json:"cache"`
 }
 
 func main() {
@@ -64,20 +65,22 @@ func main() {
 	parser, err := parse.New(cfg.Parsers)
 	failOnErr(err, "creating parsers")
 
+	cache := cache.New(cfg.Cache)
+
 	var h http.Handler
 
 	if !options.dynamic {
-		s, err := source.New(cfg.Sources)
+		s, err := source.New(cfg.Sources, cache)
 		failOnErr(err, "creating config")
 		defer s.CloseSources()
 
 		h, err = router.New(router.Config{
-			Engine: engine.New(cfg.Global, s, parser),
+			Engine: engine.New(cfg.Global, s, parser, cache),
 		})
 		failOnErr(err, "creating router")
 	} else {
 		var err error
-		h, err = dynamic.New(cfg.Dynamic, cfg.Global, parser)
+		h, err = dynamic.New(cfg.Dynamic, cfg.Global, parser, cache)
 		failOnErr(err, "creating dynamic handler")
 		logMW := logrusmiddleware.Middleware{Logger: log.Logger}
 		h = logMW.Handler(h, "")

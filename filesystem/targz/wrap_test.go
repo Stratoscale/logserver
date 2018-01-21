@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/Stratoscale/logserver/filesystem"
+	"github.com/bluele/gcache"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,7 +18,7 @@ func TestWrap(t *testing.T) {
 	require.Nil(t, err)
 	fs, err := filesystem.NewLocal(u)
 	require.Nil(t, err)
-	fs = New(fs)
+	fs = New(fs, gcache.New(0).Build())
 
 	openTests := []struct {
 		path        string
