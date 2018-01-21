@@ -111,6 +111,9 @@ type Response struct {
 }
 
 func (r Response) FilterSources(sources map[string]bool) *Response {
+	if len(sources) == 0 {
+		return &r
+	}
 	files := make([]*File, 0, len(r.Files))
 	for _, file := range r.Files {
 		// add file to files only if it exists
@@ -258,12 +261,10 @@ func (h *handler) serveTree(ctx context.Context, req Request, send func(*Respons
 		wg.Wait()
 		log.Debugf("Serve tree for %v with %d files", req.Path, len(c.files))
 		resp = &Response{Meta: req.Meta, Files: c.files}
+		h.cache.Set(cacheKey, resp)
 	}
-
-	h.cache.Set(cacheKey, resp)
-	if len(req.FilterSource) > 0 {
-		resp = resp.FilterSources(req.filterSourceMap)
-	}
+	resp = resp.FilterSources(req.filterSourceMap)
+	resp.ID = req.ID
 	send(resp)
 }
 
