@@ -400,13 +400,16 @@ func (h *handler) read(ctx context.Context, send func(*Response), req Request, n
 		if err := ctx.Err(); err != nil {
 			return
 		}
-		if re != nil && !re.Match(scanner.Bytes()) {
+		log := h.parse.Parse(path, scanner.Bytes())
+
+		// if a search was defined, check for match and if no match was found continue
+		// without sending the line
+		if re != nil && !re.MatchString(log.Msg) {
 			lineNumber += 1
 			fileOffset += len(scanner.Bytes())
 			continue
 		}
 
-		log := h.parse.Parse(path, scanner.Bytes())
 		log.FileName = path
 		log.Offset = fileOffset
 		log.FS = node.Name
