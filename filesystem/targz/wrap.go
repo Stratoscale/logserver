@@ -90,8 +90,10 @@ func (w *wrap) getTfs(dirname string) (filesystem.FileSystem, string, error) {
 	)
 
 	if val, err := w.cache.Get(key); err == nil {
+		log.Debugf("Using cache for tar %s", key)
 		fs = val.(filesystem.FileSystem)
 	} else { // not in cache
+		log.Infof("Opening new tar %s", key)
 		f, err := w.inner.Open(tarName)
 		if err != nil {
 			return nil, "", err
@@ -102,7 +104,7 @@ func (w *wrap) getTfs(dirname string) (filesystem.FileSystem, string, error) {
 		}
 		err = w.cache.Set(key, fs)
 		if err != nil {
-			log.WithError(err).Warn("Setting cache")
+			log.WithError(err).Warn("Setting cache for %s", key)
 		}
 	}
 	return fs, innerPath, nil
