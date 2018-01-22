@@ -36,10 +36,8 @@ func New(c Config) (http.Handler, error) {
 
 	r := mux.NewRouter()
 	r.Methods(http.MethodGet).Path("/ws").Handler(c.Engine)
-	r.Methods(http.MethodGet).Path("/").Handler(serveIndex)
-	r.Methods(http.MethodGet).Path("/index.html").Handler(serveIndex)
-	r.Methods(http.MethodGet).PathPrefix("/files").Handler(http.StripPrefix("/files", serveIndex))
-	r.Methods(http.MethodGet).PathPrefix("/").Handler(static)
+	r.Methods(http.MethodGet).PathPrefix("/static").Handler(static)
+	r.Methods(http.MethodGet).PathPrefix("/").Handler(serveIndex)
 
 	return r, nil
 }
