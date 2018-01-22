@@ -14,6 +14,12 @@
   revision = "2f037bcda984f172af9c62c9048a5e6c12fa3179"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/bluele/gcache"
+  packages = ["."]
+  revision = "472614239ac7e5bc6461e237c798a6ebd5aff8c1"
+
+[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
@@ -62,12 +68,6 @@
   revision = "49f2fd6dca147d5d713238550a422944d0581f69"
 
 [[projects]]
-  name = "github.com/patrickmn/go-cache"
-  packages = ["."]
-  revision = "a3647f8e31d79543b2d0f0ae2fe5c379d72cedc0"
-  version = "v2.1.0"
-
-[[projects]]
   name = "github.com/pkg/errors"
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
@@ -95,7 +95,7 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["curve25519","ed25519","ed25519/internal/edwards25519","internal/chacha20","poly1305","ssh","ssh/terminal"]
-  revision = "ee41a25c63fb5b74abf2213abb6dee3751e6ac4a"
+  revision = "a6600008915114d9c087fad9f03d75087b1a74df"
 
 [[projects]]
   branch = "master"
@@ -106,6 +106,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c9078d4d35e1d9cfd75b46e919a073fc4499d3d0be50b324c8e3c1519348bf20"
+  inputs-digest = "f8e7e261581d971a53aad60708a3231d978f261d0a4df0800f7a4f2482fdbba4"
   solver-name = "gps-cdcl"
   solver-version = 1
