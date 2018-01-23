@@ -1,6 +1,7 @@
 import React, {Component} from 'react'
 import PropTypes from 'prop-types'
 import {Tag} from 'antd'
+import classNames from 'classnames'
 
 const {CheckableTag} = Tag
 
@@ -17,11 +18,15 @@ class FSBar extends Component {
   }
 
   render() {
-    const {items} = this.props
+    const {items, className} = this.props
     return (
-      <div className="fs-bar">
-        {items.map((item, index) => <CheckableTag onChange={this.props.onToggle.bind(this, item.name)} key={index}
-                                                  checked={item.active}>{item.name}</CheckableTag>)}
+      <div className={classNames('fs-bar', className)}>
+        {items.map((item, index) => <CheckableTag onChange={this.props.onToggle.bind(this, item.name)}
+                                                  key={index}
+                                                  checked={item.active}
+                                                  color={item.color}
+                                                  className={item.active ? `ant-tag-${item.color}` : ''}
+        >{item.name}</CheckableTag>)}
       </div>
     )
   }

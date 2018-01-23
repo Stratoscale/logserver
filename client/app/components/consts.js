@@ -20,3 +20,16 @@ export const API_ACTIONS = {
   GET_CONTENT:   'get-content',
   SEARCH:        'search',
 }
+
+export const colorByLevel = (level = '') => {
+  switch (level.toLowerCase()) {
+    case 'debug':
+      return 'cyan'
+    case 'info':
+      return 'blue'
+    case 'error':
+      return 'red'
+    case 'warning':
+      return 'gold'
+  }
+}

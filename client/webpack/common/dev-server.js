@@ -20,7 +20,7 @@ module.exports = function getDevServer(ROOT_PATH, apiProxy) {
     host:               devServerHost,
     port:               devServerPort,
     proxy:              {
-      [`${basePath}/ws/*`]: {
+      [`${basePath}/_ws/*`]: {
         target: 'http://localhost:8888',
         secure: false,
         // pathRewrite: {

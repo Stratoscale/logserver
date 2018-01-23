@@ -13,7 +13,7 @@ export default class SocketContainer extends Component {
 
   componentWillMount() {
     if (!socket) {
-      socket = new WebSocket(`ws://${window.location.host}${window.__INIT__.basePath}/ws`)
+      socket = new WebSocket(`ws://${window.location.host}${window.__INIT__.basePath}/_ws`)
 
       // Connection opened
       socket.addEventListener('open', (event) => {
@@ -23,8 +23,11 @@ export default class SocketContainer extends Component {
 
       // Listen for messages
       socket.addEventListener('message', (event) => {
-        const {meta, ...payload} = JSON.parse(event.data)
-        this.props.receiveRequest(meta.id)
+        const {meta, finished, ...payload} = JSON.parse(event.data)
+        if (finished) {
+          this.props.receiveRequest(meta.action)
+        }
+
         switch (meta.action) {
           case API_ACTIONS.GET_FILE_TREE: {
             this.props.setFiles(payload.tree)

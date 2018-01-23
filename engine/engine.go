@@ -10,7 +10,6 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -99,10 +98,11 @@ type TimeRange struct {
 
 // Response from the server
 type Response struct {
-	Meta  `json:"meta"`
-	Lines []parse.Log `json:"lines,omitempty"`
-	Files []*File     `json:"tree,omitempty"`
-	Error string      `json:"error,omitempty"`
+	Meta     `json:"meta"`
+	Lines    []parse.Log `json:"lines,omitempty"`
+	Files    []*File     `json:"tree,omitempty"`
+	Error    string      `json:"error,omitempty"`
+	Finished bool        `json:"finished,omitempty"`
 }
 
 func (r Response) FilterSources(sources map[string]bool) *Response {
@@ -208,31 +208,21 @@ func reader(conn *websocket.Conn, ch <-chan *Response) {
 func (h *handler) serve(ctx context.Context, req Request, send func(*Response)) {
 	defer debug.Time(log, "Request %+v", req.Meta)()
 
-	// if any message was sent
-	// type int32 because of atomic usage
-	var sentAny int32
-	countSend := func(resp *Response) {
-		send(resp)
-		atomic.StoreInt32(&sentAny, 1)
-	}
-
 	switch req.Action {
 	case "get-file-tree":
-		h.serveTree(ctx, req, countSend)
+		h.serveTree(ctx, req, send)
 
 	case "get-content":
-		h.serveContent(ctx, req, countSend)
+		h.serveContent(ctx, req, send)
 
 	case "search":
-		h.search(ctx, req, countSend)
+		h.search(ctx, req, send)
 	}
 
 	if err := ctx.Err(); err != nil {
 		log.Debugf("Request %d cancelled", req.ID)
-	} else if sentAny == 0 {
-		// if no response was sent return an empty response
-		send(&Response{Meta: req.Meta})
 	}
+	send(&Response{Meta: req.Meta, Finished: true})
 }
 
 type treeCacheKey string

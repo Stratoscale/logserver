@@ -5,10 +5,11 @@ import {send} from 'sockets/socket-actions'
 import {API_ACTIONS} from 'consts'
 import {connect} from 'react-redux'
 import {createStructuredSelector} from 'reselect'
-import {filesSelector, filterSelector, indexSelector, locationSelect} from 'selectors'
+import {filesSelector, filterSelector, hasPendingRequest, indexSelector, locationSelect} from 'selectors'
 import {setCurrentPath} from 'file-tree/file-actions'
 import {Link} from 'react-router-dom'
 import FileView from 'file-view/file-view'
+import Loader from 'loader/loader'
 
 const File = ({path, is_dir, instances, key, showFullPath = false}) => {
   const filename = showFullPath ? '/' + path.join('/') : path[path.length - 1]
@@ -33,21 +34,23 @@ const File = ({path, is_dir, instances, key, showFullPath = false}) => {
 }
 
 @connect(createStructuredSelector({
-  files:    filesSelector,
-  index:    indexSelector,
-  location: locationSelect,
-  filter:   filterSelector,
+  files:      filesSelector,
+  index:      indexSelector,
+  location:   locationSelect,
+  filter:     filterSelector,
+  requesting: hasPendingRequest(API_ACTIONS.GET_FILE_TREE),
 }), {
   send,
   setCurrentPath,
 })
 class FileTree extends Component {
   render() {
-    const {index, files, match: {params}, filter} = this.props
+    const {index, files, requesting, match: {params}, filter} = this.props
 
     const path  = (params[0] || '').split('/').filter(Boolean)
     const isDir = path.length === 0 || index.getIn([path.join('/'), 'is_dir'])
     let data
+    let content = <FileView path={path} key={path}/>
     if (isDir) {
       data = files.getIn(path.concat(['files']), Map()).valueSeq().toJS()
 
@@ -59,16 +62,17 @@ class FileTree extends Component {
         }
         data = data.filter((value, key) => key.includes(filter)).valueSeq().toJS()
       }
-    }
-
-    return (
-      isDir ?
-        <List
+      if (requesting) {
+        content = <Loader/>
+      } else {
+        content = <List
           dataSource={data}
           renderItem={file => <File {...file} showFullPath={filter}/>}
-        /> :
-        <FileView path={path}/>
-    )
+        />
+      }
+    }
+
+    return content
   }
 }
 

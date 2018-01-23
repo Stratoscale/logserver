@@ -2,8 +2,10 @@ import React from 'react'
 
 import { Spin, Icon } from 'antd';
 
-const antIcon = <Icon type="loading" style={{ fontSize: 40 }} spin />;
 
-const Loader = () => <Spin indicator={antIcon} />
+const Loader = ({size = 40}) => {
+  const antIcon = <Icon type="loading" style={{fontSize: size}} spin/>
+  return <Spin indicator={antIcon}/>
+}
 
 export default Loader
