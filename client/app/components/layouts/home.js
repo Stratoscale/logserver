@@ -5,7 +5,7 @@ import FileTree from 'file-tree'
 import {Route, Switch} from 'react-router'
 import {connect} from 'react-redux'
 import {createStructuredSelector} from 'reselect'
-import {filesSelector, hasPendingRequest, locationSelect, searchSelector} from 'selectors'
+import {filesSelector, hasPendingRequest, isIndexReady, locationSelect, searchSelector} from 'selectors'
 import {Link, Redirect} from 'react-router-dom'
 import queryString from 'query-string'
 import {navigate, withLoader} from 'utils'
@@ -68,7 +68,9 @@ class Breadcrumbs extends Component {
 }
 
 @connect(createStructuredSelector({
-  search: searchSelector,
+  search:       searchSelector,
+  isIndexReady: isIndexReady,
+
 }), {
   send,
   setSearch,
@@ -128,6 +130,20 @@ class Home extends Component {
   }
 
   render() {
+    const {isIndexReady} = this.props
+
+    const content = isIndexReady ? <Content style={{padding: '0 50px'}}>
+      <Breadcrumbs/>
+      <div className="main-content" style={{background: '#fff', padding: 24, minHeight: 280}}>
+        <Switch>
+          <Route path="/*" render={this._renderMainComponent} exact={false}/>
+          <Redirect to={{
+            pathname: '/',
+          }}/>}/>
+        </Switch>
+      </div>
+    </Content> : <Loader/>
+
     return (
       <Layout className="layout home">
         <Header>
@@ -140,17 +156,7 @@ class Home extends Component {
             prefix={<Icon type="search" style={{color: 'rgba(0,0,0,.25)'}}/>}
           />
         </Header>
-        <Content style={{padding: '0 50px'}}>
-          <Breadcrumbs/>
-          <div className="main-content" style={{background: '#fff', padding: 24, minHeight: 280}}>
-            <Switch>
-              <Route path="/*" render={this._renderMainComponent} exact={false}/>
-              <Redirect to={{
-                pathname: '/',
-              }}/>}/>
-            </Switch>
-          </div>
-        </Content>
+        {content}
         <Footer style={{textAlign: 'center'}}>
           StratoHackathon 2017
         </Footer>
@@ -158,6 +164,5 @@ class Home extends Component {
     )
   }
 }
-
 
 export default withLoader(Home)

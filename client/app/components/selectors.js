@@ -8,6 +8,11 @@ export const isSocketReady = createSelector(
   (app = Map()) => app.get('socket_ready', false)
 )
 
+export const isIndexReady = createSelector(
+  appStateSelector,
+  (app = Map()) => app.get('index_ready', false)
+)
+
 export const currentPathSelector = createSelector(
   appStateSelector,
   (app = Map()) => app.get('current_path')

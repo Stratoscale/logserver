@@ -4,6 +4,7 @@ import {ACTIONS} from 'consts'
 
 const INITIAL_STATE = fromJS({
   socket_ready:   false,
+  index_ready:    false,
   current_path:   [],
   content:        [],
   filter:         null,
@@ -16,6 +17,10 @@ const INITIAL_STATE = fromJS({
 
 function socketReady(state, action) {
   return state.set('socket_ready', true)
+}
+
+function indexReady(state, action) {
+  return state.set('index_ready', true)
 }
 
 function setCurrentPath(state, {payload}) {
@@ -70,6 +75,7 @@ function receiveRequest(state, {payload: {action}}) {
 
 export const entities = createReducer(INITIAL_STATE, {
   [ACTIONS.SOCKET_READY]:       socketReady,
+  [ACTIONS.INDEX_READY]:        indexReady,
   [ACTIONS.SET_CURRENT_PATH]:   setCurrentPath,
   [ACTIONS.SET_CONTENT]:        setContent,
   [ACTIONS.CLEAR_CONTENT]:      clearContent,

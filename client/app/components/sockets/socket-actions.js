@@ -10,6 +10,12 @@ export function socketReady() {
   }
 }
 
+export function indexReady() {
+  return {
+    type: ACTIONS.INDEX_READY,
+  }
+}
+
 export function setFiles(files) {
   return {
     type:    ACTIONS.SET_FILES,
