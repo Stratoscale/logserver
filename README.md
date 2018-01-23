@@ -76,6 +76,7 @@ Each parser can be defined with the following keys:
 - `regexp` (Go style regular expression string): Parse each line in the long with this regular expression.
                                                  the given regular expression should have named groups with
                                                  the keys that the UI expects.
+- `append_args` (bool): (for json log) Add to msg all remaining json keys in format: key=value.
 
 #### UI Keys
 
