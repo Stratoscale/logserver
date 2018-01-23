@@ -89,6 +89,10 @@ func TestHandler(t *testing.T) {
 						},
 					},
 				},
+				{
+					Meta:     engine.Meta{ID: 1, Action: "get-content"},
+					Finished: true,
+				},
 			},
 		},
 		{
@@ -100,6 +104,10 @@ func TestHandler(t *testing.T) {
 				},
 				{
 					Meta: engine.Meta{ID: 2, Action: "get-content", FS: "node3", Path: engine.Path{"service2.log"}},
+				},
+				{
+					Meta:     engine.Meta{ID: 2, Action: "get-content"},
+					Finished: true,
 				},
 			},
 		},
@@ -118,6 +126,10 @@ func TestHandler(t *testing.T) {
 				},
 				{
 					Meta: engine.Meta{ID: 3, Action: "get-content", FS: "node3", Path: engine.Path{"service1.log"}},
+				},
+				{
+					Meta:     engine.Meta{ID: 3, Action: "get-content"},
+					Finished: true,
 				},
 			},
 		},
@@ -138,6 +150,10 @@ func TestHandler(t *testing.T) {
 						},
 					},
 				},
+				{
+					Meta:     engine.Meta{ID: 4, Action: "search"},
+					Finished: true,
+				},
 			},
 		},
 		{
@@ -155,6 +171,10 @@ func TestHandler(t *testing.T) {
 							Offset:   977076,
 						},
 					},
+				},
+				{
+					Meta:     engine.Meta{ID: 5, Action: "search"},
+					Finished: true,
 				},
 			},
 		},
@@ -175,6 +195,10 @@ func TestHandler(t *testing.T) {
 						},
 					},
 				},
+				{
+					Meta:     engine.Meta{ID: 6, Action: "search"},
+					Finished: true,
+				},
 			},
 		},
 		{
@@ -194,6 +218,10 @@ func TestHandler(t *testing.T) {
 						},
 					},
 				},
+				{
+					Meta:     engine.Meta{ID: 7, Action: "search"},
+					Finished: true,
+				},
 			},
 		},
 		{
@@ -201,7 +229,8 @@ func TestHandler(t *testing.T) {
 			message: `{"meta":{"action":"search","id":8},"path":[], "regexp": "value that you won't found'"}`,
 			want: []engine.Response{
 				{
-					Meta: engine.Meta{ID: 8, Action: "search"},
+					Meta:     engine.Meta{ID: 8, Action: "search"},
+					Finished: true,
 				},
 			},
 		},
@@ -247,6 +276,10 @@ func TestHandler(t *testing.T) {
 						},
 					},
 				},
+				{
+					Meta:     engine.Meta{ID: 9, Action: "get-file-tree"},
+					Finished: true,
+				},
 			},
 		},
 		{
@@ -263,6 +296,10 @@ func TestHandler(t *testing.T) {
 							Instances: []engine.FileInstance{{Size: 0, FS: "node2"}},
 						},
 					},
+				},
+				{
+					Meta:     engine.Meta{ID: 10, Action: "get-file-tree"},
+					Finished: true,
 				},
 			},
 		},
