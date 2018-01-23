@@ -268,7 +268,7 @@ func TestHandler(t *testing.T) {
 		},
 	}
 
-	addr := "ws://" + s.Listener.Addr().String() + "/ws"
+	addr := "ws://" + s.Listener.Addr().String() + "/_ws"
 
 	for _, tt := range tests {
 		tt := tt
