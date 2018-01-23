@@ -1,5 +1,5 @@
 import React, {Component} from 'react'
-import {List, Set} from 'immutable'
+import {Map, List, Set} from 'immutable'
 import {contentSelector, filesSelector, hasPendingRequest, indexSelector, locationSelect} from 'selectors'
 import {connect} from 'react-redux'
 import {createStructuredSelector} from 'reselect'
@@ -43,7 +43,9 @@ class FileView extends Component {
       activeFs = [fs]
     } else {
       const instance = index.getIn([path.join('/'), 'instances'], List()).first()
-      activeFs       = [instance.get('fs')]
+      if (instance) {
+        activeFs = [instance.get('fs')]
+      }
     }
 
     this.setState({
@@ -116,7 +118,7 @@ class FileView extends Component {
     }
 
     const path = location.pathname.split('/').filter(Boolean)
-    const file = index.get(path.join('/'))
+    const file = index.get(path.join('/'), Map())
 
     return (
       <div className="file-view">

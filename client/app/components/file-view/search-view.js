@@ -18,7 +18,7 @@ class SearchView extends Component {
   render() {
     const {results, ...props} = this.props
 
-    if (!results.size) {
+    if (!results.size && !props.requesting) {
       return (
         <div>No results found</div>
       )
