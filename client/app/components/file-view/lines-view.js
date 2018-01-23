@@ -9,8 +9,6 @@ import queryString from 'query-string'
 import moment from 'moment'
 import {colorByLevel} from 'consts'
 import ImmutablePropTypes from 'react-immutable-proptypes'
-import Loader from 'loader/loader'
-
 
 const calculateMaxLengths = (lines) => lines.reduce(({message, level}, line) => ({
   message: Math.max(message, line.get('msg').length),
@@ -54,7 +52,7 @@ class LinesView extends Component {
         return (
           <div className="file-results" key={filename}>
             <div className="file-name"><Link to={`/${filename}?fs=${firstLine.get('fs')}&line=${firstLine.get('line')}`}>{filename}</Link></div>
-            {lines.map((line = Map(), index) => {
+            {lines.take(5).map((line = Map(), index) => {
                 return (
                   <div key={index} className={cn('line', line.get('level', '').toLowerCase())}>
                     {line.get('level') ? <Tag key={line.get('level')} color={colorByLevel(line.get('level'))}>{line.get('level')}</Tag> : null}
@@ -171,7 +169,7 @@ class LinesView extends Component {
   }
 
   render() {
-    const {showFilename, requesting} = this.props
+    const {showFilename} = this.props
     let content
 
     if (showFilename) {
@@ -184,7 +182,6 @@ class LinesView extends Component {
       <div className="lines-view-container">
         <div className="lines-view">
           {content}
-          {requesting ? <Loader/> : null}
         </div>
       </div>
     )

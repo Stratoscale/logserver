@@ -5,19 +5,21 @@ import FileTree from 'file-tree'
 import {Route, Switch} from 'react-router'
 import {connect} from 'react-redux'
 import {createStructuredSelector} from 'reselect'
-import {filesSelector, locationSelect, searchSelector} from 'selectors'
+import {filesSelector, hasPendingRequest, locationSelect, searchSelector} from 'selectors'
 import {Link, Redirect} from 'react-router-dom'
 import queryString from 'query-string'
 import {navigate, withLoader} from 'utils'
 import {clearSearchResults, send, setFilter, setSearch} from 'sockets/socket-actions'
 import {API_ACTIONS} from 'consts'
 import SearchView from 'file-view/search-view'
+import Loader from 'loader/loader'
 
 const {Header, Content, Footer} = Layout
 
 @connect(createStructuredSelector({
-  location: locationSelect,
-  files:    filesSelector,
+  location:         locationSelect,
+  files:            filesSelector,
+  searchRequesting: hasPendingRequest(API_ACTIONS.SEARCH),
 }), {
   setFilter,
 })
@@ -38,14 +40,14 @@ class Breadcrumbs extends Component {
   }, 300)
 
   render() {
-    const {location, files} = this.props
-    const {search}          = queryString.parse(location.search)
+    const {location, files, searchRequesting} = this.props
+    const {search}                            = queryString.parse(location.search)
 
     if (search) {
       return (
         <Breadcrumb style={{margin: '16px 0'}} separator=">">
           <Breadcrumb.Item><Link to={'/'}>Home</Link></Breadcrumb.Item>
-          <Breadcrumb.Item>Search Results</Breadcrumb.Item>
+          <Breadcrumb.Item>Search Results {searchRequesting ? <Loader size={15}/> : null}</Breadcrumb.Item>
         </Breadcrumb>
       )
     } else {

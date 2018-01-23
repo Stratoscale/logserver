@@ -23,8 +23,11 @@ export default class SocketContainer extends Component {
 
       // Listen for messages
       socket.addEventListener('message', (event) => {
-        const {meta, ...payload} = JSON.parse(event.data)
-        this.props.receiveRequest(meta.action)
+        const {meta, finished, ...payload} = JSON.parse(event.data)
+        if (finished) {
+          this.props.receiveRequest(meta.action)
+        }
+
         switch (meta.action) {
           case API_ACTIONS.GET_FILE_TREE: {
             this.props.setFiles(payload.tree)
