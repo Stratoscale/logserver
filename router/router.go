@@ -36,7 +36,7 @@ func New(c Config) (http.Handler, error) {
 
 	r := mux.NewRouter()
 	r.Methods(http.MethodGet).Path("/_ws").Handler(c.Engine)
-	r.Methods(http.MethodGet).PathPrefix("/_static").Handler(static)
+	r.Methods(http.MethodGet).PathPrefix("/_static").Handler(http.StripPrefix("/_static", static))
 	r.Methods(http.MethodGet).PathPrefix("/").Handler(serveIndex)
 
 	return r, nil
