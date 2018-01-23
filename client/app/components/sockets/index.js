@@ -13,7 +13,7 @@ export default class SocketContainer extends Component {
 
   componentWillMount() {
     if (!socket) {
-      socket = new WebSocket(`ws://${window.location.host}${window.__INIT__.basePath}/ws`)
+      socket = new WebSocket(`ws://${window.location.host}${window.__INIT__.basePath}/_ws`)
 
       // Connection opened
       socket.addEventListener('open', (event) => {
