@@ -10,6 +10,8 @@ import {setCurrentPath} from 'file-tree/file-actions'
 import {Link} from 'react-router-dom'
 import FileView from 'file-view/file-view'
 import Loader from 'loader/loader'
+import filesize from 'file-size'
+
 
 const File = ({path, is_dir, instances, key, showFullPath = false}) => {
   const filename = showFullPath ? '/' + path.join('/') : path[path.length - 1]
@@ -23,7 +25,7 @@ const File = ({path, is_dir, instances, key, showFullPath = false}) => {
     const viewURL = `/${path.join('/')}`
     content       = <span>
       <Icon type={'file'}/> <Link to={viewURL}>{filename}</Link>
-      {instances.map(instance => <Tag key={instance.fs}><Link to={`${viewURL}?fs=${instance.fs}`}>{instance.fs}</Link></Tag>)}
+      {instances.map(instance => <Tag key={instance.fs}><Link to={`${viewURL}?fs=${instance.fs}`}>{instance.fs} <span className="size">({filesize(instance.size, {fixed: 0}).human()})</span></Link></Tag>)}
     </span>
   }
   return (

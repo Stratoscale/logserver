@@ -132,7 +132,7 @@ class LinesView extends Component {
                           }) => {
               const column = this._getColumns()[columnIndex]
               const line   = lines.get(index)
-              let content
+              let content = null
               switch (column.name) {
                 case 'msg': {
                   content = line.get('msg')
@@ -144,8 +144,10 @@ class LinesView extends Component {
                   break
                 }
                 case 'timestamp': {
-                  const timestamp = moment(line.get('time'))
-                  content         = <span className="time" key={index}>{timestamp.format('YY/MM/DD HH:mm:ss')}</span>
+                  if (line.get('time')) {
+                    const timestamp = moment(line.get('time'))
+                    content         = <span className="time" key={index}>{timestamp.format('YY/MM/DD HH:mm:ss')}</span>
+                  }
                   break
                 }
                 case 'linenumber': {

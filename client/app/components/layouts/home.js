@@ -58,7 +58,7 @@ class Breadcrumbs extends Component {
             return <Breadcrumb.Item key={pathPart}><Link to={`/${path.slice(1, i + 1).join('/')}`}>{pathPart}</Link></Breadcrumb.Item>
           })}
           {files.size ? <Breadcrumb.Item><input className="tree-search" placeholder="filter..."
-                                                value={this.state.query}
+                                                value={this.state.filter}
                                                 onChange={this.handleChange}/>
           </Breadcrumb.Item> : null}
         </Breadcrumb>
@@ -158,7 +158,6 @@ class Home extends Component {
         </Header>
         {content}
         <Footer style={{textAlign: 'center'}}>
-          StratoHackathon 2017
         </Footer>
       </Layout>
     )
