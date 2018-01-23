@@ -16,6 +16,7 @@ import (
 
 const (
 	defaultMarkFile = "logstack.enable"
+	staticPath      = "/_static"
 )
 
 type Config struct {
@@ -34,6 +35,7 @@ func New(c Config, engineConfig engine.Config, p parse.Parse, cache gcache.Cache
 		engineConfig: engineConfig,
 		parse:        p,
 		cache:        cache,
+		static:       http.StripPrefix(staticPath+"/", http.FileServer(http.Dir("./client/dist"))),
 	}
 	if h.MarkFile == "" {
 		h.MarkFile = defaultMarkFile
@@ -46,9 +48,14 @@ type handler struct {
 	engineConfig engine.Config
 	parse        parse.Parse
 	cache        gcache.Cache
+	static       http.Handler
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if strings.HasPrefix(r.URL.Path, staticPath) {
+		h.static.ServeHTTP(w, r)
+		return
+	}
 	root, err := h.searchRoot(r.URL.Path)
 	if err != nil {
 		http.NotFound(w, r)
