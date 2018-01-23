@@ -13,7 +13,7 @@ build:
 	docker build . -t logserver
 
 client: build
-	docker run --rm --name logserver -d -v $(PWD)/logserver.json:/logserver.json -v $(PWD)/example:/example logserver
+	docker run --name logserver -d -v $(PWD)/logserver.json:/logserver.json -v $(PWD)/example:/example logserver
 	docker cp logserver:/client/dist ./client/
 	docker rm -f logserver
 
