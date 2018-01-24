@@ -51,7 +51,7 @@ func New(c []Config, cache gcache.Cache) (Sources, error) {
 		}
 		log.Infof("Opened: %s", u)
 		if srcDesc.OpenTarFiles {
-			fs = targz.New(fs, cache, srcDesc.URL)
+			fs = targz.New(fs, cache, srcDesc.URL+"/")
 		}
 		s = append(s, Source{srcDesc.Name, fs})
 	}
