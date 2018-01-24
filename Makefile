@@ -1,7 +1,7 @@
 .PHONY: test run-example run-logstack-example client
 
 test:
-	go test -race ./...
+	go test -race ./... -timeout 30s
 
 run-example:
 	go run ./main.go -debug -config ./example/logserver.json
