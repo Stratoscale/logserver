@@ -50,6 +50,17 @@ var keyword = regexp.MustCompile(`(%\(([^)]+\))[diouxXeEfFgGcrs])`)
 func (l *Log) injectArgs(args interface{}) {
 	l.Msg = strings.Replace(l.Msg, "%s", "%v", -1)
 
+	// special case is when a dict or a list should be inserted into one argument in the string
+	if strings.Count(l.Msg, "%v") == 1 {
+		pretty, err := json.Marshal(args)
+		if err != nil {
+			return
+		}
+		l.Msg = fmt.Sprintf(l.Msg, string(pretty))
+		return
+	}
+
+	// normal case is when a dict or a list is injected to the string with positional or keyword arguments
 	switch args := args.(type) {
 	case []interface{}:
 		l.Msg = fmt.Sprintf(l.Msg, args...)

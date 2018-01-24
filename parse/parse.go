@@ -131,7 +131,7 @@ func (p *parser) parseJson(line []byte) *Log {
 	}
 
 	if p.AppendArgs {
-		log.Msg += args(j)
+		log.Msg += argsToMessage(j)
 	}
 
 	return log
@@ -164,7 +164,7 @@ func (p *parser) parseRegexp(line []byte) *Log {
 	return log
 }
 
-func args(j map[string]interface{}) string {
+func argsToMessage(j map[string]interface{}) string {
 	buf := bytes.NewBuffer(nil)
 	for key, val := range j {
 		buf.WriteString(fmt.Sprintf(" %v=%v", key, val))

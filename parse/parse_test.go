@@ -72,6 +72,26 @@ func TestParser(t *testing.T) {
 			},
 		},
 		{
+			name:    "jsonlog/map into %s",
+			logName: "file.jsonlog",
+			line:    `{"args": {"key": "value", "key1": "value1"}, "levelname": "INFO", "msg": "Message: %s", "created": 1514211785.448693}`,
+			want: &Log{
+				Msg:   `Message: {"key":"value","key1":"value1"}`,
+				Time:  &time1,
+				Level: "INFO",
+			},
+		},
+		{
+			name:    "jsonlog/list into %s",
+			logName: "file.jsonlog",
+			line:    `{"args": ["arg1", "arg2"], "levelname": "INFO", "msg": "Message: %s", "created": 1514211785.448693}`,
+			want: &Log{
+				Msg:   `Message: ["arg1","arg2"]`,
+				Time:  &time1,
+				Level: "INFO",
+			},
+		},
+		{
 			name:    "openstack",
 			logName: "optnstack.log",
 			line:    "2017-12-25 16:23:05,123.123 33983 WARN oslo_service.periodic_task [-] Skipping periodic task _periodic_update_dns because its interval is negative",
