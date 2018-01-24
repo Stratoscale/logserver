@@ -18,7 +18,7 @@ func TestWrap(t *testing.T) {
 	require.Nil(t, err)
 	fs, err := filesystem.NewLocal(u)
 	require.Nil(t, err)
-	fs = New(fs, gcache.New(0).Build())
+	fs = New(fs, gcache.New(0).Build(), "")
 
 	openTests := []struct {
 		path        string

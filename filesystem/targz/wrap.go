@@ -14,16 +14,18 @@ var (
 	reSuffix   = regexp.MustCompile(`\.tar(\.gz)?$`)
 )
 
-func New(inner filesystem.FileSystem, cache gcache.Cache) filesystem.FileSystem {
+func New(inner filesystem.FileSystem, cache gcache.Cache, cachePrefix string) filesystem.FileSystem {
 	return &wrap{
-		inner: inner,
-		cache: cache,
+		inner:       inner,
+		cache:       cache,
+		cachePrefix: cachePrefix,
 	}
 }
 
 type wrap struct {
-	inner filesystem.FileSystem
-	cache gcache.Cache
+	inner       filesystem.FileSystem
+	cache       gcache.Cache
+	cachePrefix string
 }
 
 func (w *wrap) ReadDir(dirname string) ([]os.FileInfo, error) {
@@ -85,7 +87,7 @@ func (w *wrap) getTfs(dirname string) (filesystem.FileSystem, string, error) {
 
 	var (
 		// key for storing tar files in cache
-		key = cacheKey(tarName)
+		key = cacheKey(w.cachePrefix + tarName)
 		fs  filesystem.FileSystem
 	)
 
