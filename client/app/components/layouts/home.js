@@ -45,7 +45,7 @@ class Breadcrumbs extends Component {
 
     if (search) {
       return (
-        <Breadcrumb style={{margin: '16px 0'}} separator=">">
+        <Breadcrumb style={{margin: '10px 0'}} separator=">">
           <Breadcrumb.Item><Link to={'/'}>Home</Link></Breadcrumb.Item>
           <Breadcrumb.Item>Search Results {searchRequesting ? <Loader size={15}/> : null}</Breadcrumb.Item>
         </Breadcrumb>
@@ -53,7 +53,7 @@ class Breadcrumbs extends Component {
     } else {
       const path = ['Home'].concat(location.pathname.split('/').filter(Boolean))
       return (
-        <Breadcrumb style={{margin: '16px 0'}} separator=">">
+        <Breadcrumb style={{margin: '10px 0'}} separator=">">
           {path.map((pathPart, i) => {
             return <Breadcrumb.Item key={pathPart}><Link to={`/${path.slice(1, i + 1).join('/')}`}>{pathPart}</Link></Breadcrumb.Item>
           })}
@@ -132,7 +132,7 @@ class Home extends Component {
   render() {
     const {isIndexReady} = this.props
 
-    const content = isIndexReady ? <Content style={{padding: '0 50px'}}>
+    const content = isIndexReady ? <Content style={{padding: '0 30px'}}>
       <Breadcrumbs/>
       <div className="main-content" style={{background: '#fff', padding: 24, minHeight: 280}}>
         <Switch>

@@ -11,8 +11,9 @@ import {FSBar} from 'fs-bar'
 import {navigate} from 'utils'
 import Loader from 'loader/loader'
 import {Checkbox} from 'antd'
+import filesize from 'file-size'
 
-const ALL_LEVELS = Set(['debug', 'info', 'warning', 'error'])
+const ALL_LEVELS = Set(['debug', 'info', 'warning', 'error', 'success', 'progress'])
 
 @connect(createStructuredSelector({
   location:   locationSelect,
@@ -124,8 +125,9 @@ class FileView extends Component {
       <div className="file-view">
         <FSBar
           items={file.get('instances', List()).map(instance => ({
-            name:   instance.get('fs'),
-            active: this.state.activeFs.includes(instance.get('fs')),
+            name:    instance.get('fs'),
+            content: <span>{instance.get('fs')} <span className="size">({filesize(instance.get('size'), {fixed: 0}).human()})</span></span>,
+            active:  this.state.activeFs.includes(instance.get('fs')),
           })).toJS()}
           onToggle={this._handleToggle}
         />

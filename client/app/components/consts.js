@@ -32,5 +32,9 @@ export const colorByLevel = (level = '') => {
       return 'red'
     case 'warning':
       return 'gold'
+    case 'success':
+      return 'green'
+    case 'progress':
+      return 'purple'
   }
 }

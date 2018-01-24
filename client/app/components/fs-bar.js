@@ -26,7 +26,7 @@ class FSBar extends Component {
                                                   checked={item.active}
                                                   color={item.color}
                                                   className={item.active ? `ant-tag-${item.color}` : ''}
-        >{item.name}</CheckableTag>)}
+        >{item.content || item.name}</CheckableTag>)}
       </div>
     )
   }
