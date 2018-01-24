@@ -408,6 +408,9 @@ func (h *handler) read(ctx context.Context, send chan<- *Response, req Request, 
 		sentAny = false
 	)
 
+	// set initial buffer size to 64kb and allow it to increase up to 1mb
+	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+
 	if respMeta.Path[0] == "" {
 		respMeta.Path = respMeta.Path[1:]
 	}
