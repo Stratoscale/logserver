@@ -6,7 +6,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/Stratoscale/logserver/filesystem"
-	"github.com/Stratoscale/logserver/filesystem/targz"
+	"github.com/Stratoscale/logserver/filesystem/tar"
 	"github.com/bluele/gcache"
 )
 
@@ -17,6 +17,7 @@ type Config struct {
 	Name         string `json:"name"`
 	URL          string `json:"url"`
 	OpenTarFiles bool   `json:"open_tar_files"`
+	OpenJournal  string `json:"open_journal"`
 }
 
 type Sources []Source
@@ -52,7 +53,10 @@ func New(c []Config, cache gcache.Cache) (Sources, error) {
 		}
 		log.Infof("Opened %s: %s", srcDesc.Name, srcDesc.URL)
 		if srcDesc.OpenTarFiles {
-			fs = targz.New(fs, cache, srcDesc.URL+"/")
+			fs = tar.Wrap(fs, cache, srcDesc.URL+"/")
+		}
+		if srcDesc.OpenJournal != "" {
+			fs = filesystem.WrapJournal(fs, srcDesc.OpenJournal)
 		}
 		s = append(s, Source{srcDesc.Name, fs})
 	}

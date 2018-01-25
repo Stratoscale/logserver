@@ -3,11 +3,8 @@ package filesystem
 import (
 	"io"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/kr/fs"
 )
-
-var log = logrus.StandardLogger().WithField("pkg", "filesystem")
 
 type File interface {
 	io.Reader
