@@ -1,71 +1,20 @@
 import React, {Component} from 'react'
-import _debounce from 'lodash/debounce'
-import {Input, Icon, Layout, Breadcrumb} from 'antd'
+import {Icon, Input, Layout} from 'antd'
 import FileTree from 'file-tree'
 import {Route, Switch} from 'react-router'
 import {connect} from 'react-redux'
 import {createStructuredSelector} from 'reselect'
-import {filesSelector, hasPendingRequest, isIndexReady, locationSelect, searchSelector} from 'selectors'
-import {Link, Redirect} from 'react-router-dom'
+import {isIndexReady, searchSelector} from 'selectors'
+import {Redirect} from 'react-router-dom'
 import queryString from 'query-string'
 import {navigate, withLoader} from 'utils'
-import {clearSearchResults, send, setFilter, setSearch} from 'sockets/socket-actions'
+import {clearSearchResults, send, setSearch} from 'sockets/socket-actions'
 import {API_ACTIONS} from 'consts'
 import SearchView from 'file-view/search-view'
 import Loader from 'loader/loader'
+import Breadcrumbs from 'layouts/breadcrumbs'
 
 const {Header, Content, Footer} = Layout
-
-@connect(createStructuredSelector({
-  location:         locationSelect,
-  files:            filesSelector,
-  searchRequesting: hasPendingRequest(API_ACTIONS.SEARCH),
-}), {
-  setFilter,
-})
-class Breadcrumbs extends Component {
-  state = {
-    filter: '',
-  }
-
-  handleChange = (e) => {
-    this.setState({
-      filter: e.target.value,
-    })
-    this.updateFilter()
-  }
-
-  updateFilter = _debounce(() => {
-    this.props.setFilter(this.state.filter)
-  }, 300)
-
-  render() {
-    const {location, files, searchRequesting} = this.props
-    const {search}                            = queryString.parse(location.search)
-
-    if (search) {
-      return (
-        <Breadcrumb style={{margin: '10px 0'}} separator=">">
-          <Breadcrumb.Item><Link to={'/'}>Home</Link></Breadcrumb.Item>
-          <Breadcrumb.Item>Search Results {searchRequesting ? <Loader size={15}/> : null}</Breadcrumb.Item>
-        </Breadcrumb>
-      )
-    } else {
-      const path = ['Home'].concat(location.pathname.split('/').filter(Boolean))
-      return (
-        <Breadcrumb style={{margin: '10px 0'}} separator=">">
-          {path.map((pathPart, i) => {
-            return <Breadcrumb.Item key={pathPart}><Link to={`/${path.slice(1, i + 1).join('/')}`}>{pathPart}</Link></Breadcrumb.Item>
-          })}
-          {files.size ? <Breadcrumb.Item><input className="tree-search" placeholder="filter..."
-                                                value={this.state.filter}
-                                                onChange={this.handleChange}/>
-          </Breadcrumb.Item> : null}
-        </Breadcrumb>
-      )
-    }
-  }
-}
 
 @connect(createStructuredSelector({
   search:       searchSelector,

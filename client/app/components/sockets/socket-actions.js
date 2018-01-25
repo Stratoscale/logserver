@@ -51,6 +51,36 @@ export function setFilter(payload) {
   }
 }
 
+export function findNext() {
+  return {
+    type: ACTIONS.FIND_NEXT,
+  }
+}
+
+export function findPrev() {
+  return {
+    type: ACTIONS.FIND_PREV,
+  }
+}
+
+export function clearFind() {
+  return {
+    type: ACTIONS.CLEAR_FIND,
+  }
+}
+
+export function setFind(payload) {
+  return {
+    type: ACTIONS.SET_FIND,
+    meta: {
+      debounce: {
+        time: 100,
+      },
+    },
+    payload,
+  }
+}
+
 export function setSearch(payload) {
   return {
     type: ACTIONS.SET_SEARCH,
@@ -109,6 +139,13 @@ export function receiveRequest(action) {
   }
 }
 
+export function setLevels(levels) {
+  return {
+    type:    ACTIONS.SET_LEVELS,
+    payload: levels,
+  }
+}
+
 function debouncedSend(action, data, id) {
   const thunk = (dispatch, getState) => {
     socket.send(JSON.stringify({
@@ -145,7 +182,5 @@ export function send(action, data) {
     }
 
     dispatch(debouncedSend(action, data, id))
-
   }
-
 }

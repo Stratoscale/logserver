@@ -24,6 +24,11 @@
     line-height: 31px
     .ant-breadcrumb-link
       line-height: normal
+      .ant-input, .ant-input-group-wrapper
+        width: initial
+      .ant-input-group-addon
+        padding: 0
+        border: none
     .ant-spin
       margin-left: 10px
   .logo
@@ -48,6 +53,10 @@
     white-space: pre
     font-family: monospace
     font-size: 12px
+    .find-highlight
+      background-color: yellow
+      &.current
+        background-color: orange
     .time
       color: #5b6360
       padding-right: 5px
@@ -69,6 +78,9 @@
     border: none
     padding: 5px
     background: rgba(0, 0, 0, 0.05)
+  .find-index
+    font-size: 12px
+    margin-left: 5px
   .ant-list
     overflow-y: auto
   .search-view

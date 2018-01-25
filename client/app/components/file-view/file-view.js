@@ -1,10 +1,12 @@
 import React, {Component} from 'react'
-import {Map, List, Set} from 'immutable'
-import {contentSelector, filesSelector, hasPendingRequest, indexSelector, locationSelect} from 'selectors'
+import {List, Map} from 'immutable'
+import {
+  contentSelector, filesSelector, findSelector, hasPendingRequest, indexSelector, levelsSelector, locationSelect, matchesSelector,
+} from 'selectors'
 import {connect} from 'react-redux'
 import {createStructuredSelector} from 'reselect'
 import queryString from 'query-string'
-import {clearContent, send, setSearch} from 'sockets/socket-actions'
+import {clearContent, send, setLevels, setSearch} from 'sockets/socket-actions'
 import {API_ACTIONS, colorByLevel} from 'consts'
 import {LinesView} from 'file-view/lines-view'
 import {FSBar} from 'fs-bar'
@@ -12,24 +14,26 @@ import {navigate} from 'utils'
 import Loader from 'loader/loader'
 import {Checkbox} from 'antd'
 import filesize from 'file-size'
-
-const ALL_LEVELS = Set(['debug', 'info', 'warning', 'error', 'success', 'progress'])
+import {ALL_LEVELS} from 'reducers/app-reducers'
 
 @connect(createStructuredSelector({
   location:   locationSelect,
   content:    contentSelector,
+  matches:    matchesSelector,
   files:      filesSelector,
+  levels:     levelsSelector,
+  find:       findSelector,
   index:      indexSelector,
   requesting: hasPendingRequest(API_ACTIONS.GET_CONTENT),
 }), {
   send,
   setSearch,
   clearContent,
+  setLevels,
 })
 class FileView extends Component {
   state = {
     activeFs:        [],
-    showLevels:      ALL_LEVELS,
     showTimestamp:   true,
     showLinenumbers: true,
   }
@@ -75,14 +79,11 @@ class FileView extends Component {
   }
 
   _handleLevelToggle = (index) => {
-    if (this.state.showLevels.includes(index)) {
-      this.setState({
-        showLevels: this.state.showLevels.delete(index),
-      })
+    const {levels, setLevels} = this.props
+    if (levels.includes(index)) {
+      setLevels(levels.delete(index))
     } else {
-      this.setState({
-        showLevels: this.state.showLevels.add(index),
-      })
+      setLevels(levels.add(index))
     }
   }
 
@@ -102,18 +103,38 @@ class FileView extends Component {
     navigate(`${pathname}?${fs}`)
   }
 
+  _matchToLine = (matches, index) => {
+    let matchCount = 0
+    for (let lineIndex of matches.keySeq().sort()) {
+      const lineMatches = matches.get(lineIndex)
+      if (matchCount + lineMatches.length > index) {
+        return lineIndex
+      }
+      matchCount += lineMatches.length
+    }
+  }
+
   render() {
-    const {content, location, index, requesting} = this.props
-    let contentComponent                         = null
+    let {matches, content, location, index, requesting, find, levels} = this.props
+
+    const scrollToLine = matches.size ? this._matchToLine(matches, find.get('index')) : undefined
+
+    let contentComponent = null
+
     if (requesting) {
       contentComponent = <Loader/>
-    } else if (content && content.size > 0) {
+    } else if (content.size > 0) {
       contentComponent =
         <LinesView lines={content}
                    location={location}
-                   showLevels={this.state.showLevels}
+                   matches={matches}
+                   findIndex={find.get('index')}
+                   findQuery={find.get('query')}
+                   scrollToLine={scrollToLine}
+                   showLevels={levels}
                    showLinenumbers={this.state.showLinenumbers}
-                   showTimestamp={this.state.showTimestamp}/>
+                   showTimestamp={this.state.showTimestamp}
+        />
     } else {
       contentComponent = <div>File is empty</div>
     }
@@ -136,7 +157,7 @@ class FileView extends Component {
                  className="levels"
                  items={ALL_LEVELS.map(level => ({
                    name:   level,
-                   active: this.state.showLevels.includes(level),
+                   active: levels.includes(level),
                    color:  colorByLevel(level),
                  })).toJS()}/>
           <Checkbox checked={this.state.showLinenumbers} onChange={({target: {checked}}) => {

@@ -1,4 +1,6 @@
 import React, {Component} from 'react'
+import _isString from 'lodash/isString'
+import _flatMap from 'lodash/flatMap'
 import cn from 'classnames'
 import {Set, Map} from 'immutable'
 import {Tag} from 'antd'
@@ -12,7 +14,13 @@ import ImmutablePropTypes from 'react-immutable-proptypes'
 import {navigate} from 'utils'
 
 const calculateMaxLengths = (lines) => lines.reduce(({message, level}, line) => ({
-  message: Math.max(message, line.get('msg').length),
+  message: Math.max(message, Array.isArray(line.get('msg')) ? line.get('msg').reduce((lineLength, token) => {
+    if (_isString(token)) {
+      return lineLength + token.length
+    } else {
+      return lineLength + 1
+    }
+  }, 0) : line.get('msg').length),
   level:   Math.max(level, line.get('level').length),
 }), {message: 0, level: 0})
 
@@ -24,8 +32,6 @@ const calculateLines = ({lines, showLevels, showFilename}) => {
       line: groupLines.getIn([0, 'line']),
       fs:   groupLines.getIn([0, 'fs']),
     }), ...groupLines]).toList()
-  } else if (showLevels.size > 0) {
-    return lines.filter(line => !line.get('level') || showLevels.includes(line.get('level', '').toLowerCase()))
   }
   return lines
 }
@@ -40,6 +46,7 @@ class LinesView extends Component {
     showFilename:    PropTypes.bool,
     showTimestamp:   PropTypes.bool,
     showLinenumbers: PropTypes.bool,
+    scrollToLine:    PropTypes.number,
     showLevels:      ImmutablePropTypes.set,
   }
 
@@ -116,7 +123,20 @@ class LinesView extends Component {
     }
 
     const message   = line.get('msg', '')
-    const lineCount = message.split('\n').length
+    let lineCount
+
+    if (Array.isArray(message)) {
+      lineCount = message.reduce((count, token) => {
+        if (_isString(token)) {
+          return count + token.split('\n').length - 1
+        } else {
+          return count
+        }
+      }, 0)
+    } else {
+      lineCount = message.split('\n').length
+    }
+
     return (lineCount > 1 ? lineCount + 2 : 1) * 16
   }
 
@@ -134,8 +154,9 @@ class LinesView extends Component {
                      key,
                      style,
                    }) => {
-    const column = this._getColumns()[columnIndex]
-    const line   = this.state.lines.get(index)
+    const {matches, findIndex, findQuery} = this.props
+    const column                          = this._getColumns()[columnIndex]
+    const line                            = this.state.lines.get(index)
 
     let content = null
     switch (column.name) {
@@ -144,6 +165,24 @@ class LinesView extends Component {
         if (line.get('type') === 'filename') {
           content =
             <div className="file-name"><Link to={`/${content}?fs=${line.get('fs')}&line=${line.get('line')}`}>{content}</Link></div>
+        }
+        if (matches && matches.has(line.get('line'))) {
+          const findIndexOffset = matches.keySeq().sort().reduce((result, matchIndex) => {
+            const lineMatches = matches.get(matchIndex)
+            if (matchIndex < line.get('line')
+            ) {
+              return result + lineMatches.length
+            }
+            return result
+          }, 0)
+
+          const tokens = content.split(findQuery)
+          content      = _flatMap(tokens, (token, tokenIndex) => {
+            const isCurrent = findIndexOffset + tokenIndex === findIndex
+            return (tokenIndex < (tokens.length - 1) ? [token,
+              <span
+                className={cn('find-highlight', {current: isCurrent})}>{findQuery}</span>] : [token])
+          })
         }
         break
       }
@@ -174,8 +213,8 @@ class LinesView extends Component {
   }
 
   _renderLines = () => {
-    const {location = {}} = this.props
-    const {lines}         = this.state
+    const {location = {}, scrollToLine} = this.props
+    const {lines}                       = this.state
 
     const {line = 0} = queryString.parse(location.search)
     return (
@@ -183,7 +222,7 @@ class LinesView extends Component {
         {({height, width}) => (
           <Grid
             ref={node => this.grid = node}
-            scrollToRow={Math.min(lines.size, Number(line))}
+            scrollToRow={scrollToLine || Math.min(lines.size, Number(line))}
             width={width}
             height={height}
             rowCount={lines.size}

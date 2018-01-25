@@ -1,19 +1,24 @@
 import keyMirror from 'keymirror'
 
 export const ACTIONS = keyMirror({
-  SOCKET_READY:       null,
-  INDEX_READY:        null,
-  SET_FILES:          null,
-  SET_CURRENT_PATH:   null,
-  SET_CONTENT:        null,
   CLEAR_CONTENT:      null,
+  CLEAR_FIND:         null,
+  INDEX_READY:        null,
+  RECEIVE_REQUEST:    null,
+  FIND_NEXT:          null,
+  FIND_PREV:          null,
+  SEND_REQUEST:       null,
+  SET_CONTENT:        null,
   SET_CONTENT_ID:     null,
+  SET_CURRENT_PATH:   null,
+  SET_FILES:          null,
   SET_FILTER:         null,
+  SET_FIND:           null,
   SET_SEARCH:         null,
   SET_SEARCH_ID:      null,
   SET_SEARCH_RESULTS: null,
-  SEND_REQUEST:       null,
-  RECEIVE_REQUEST:    null,
+  SET_LEVELS:         null,
+  SOCKET_READY:       null,
 })
 
 export const API_ACTIONS = {
