@@ -10,7 +10,7 @@ import {LinesView} from 'file-view/lines-view'
 import {FSBar} from 'fs-bar'
 import {navigate} from 'utils'
 import Loader from 'loader/loader'
-import {Checkbox} from 'antd'
+import {Button, Checkbox} from 'antd'
 import filesize from 'file-size'
 
 const ALL_LEVELS = Set(['debug', 'info', 'warning', 'error', 'success', 'progress'])
@@ -28,10 +28,28 @@ const ALL_LEVELS = Set(['debug', 'info', 'warning', 'error', 'success', 'progres
 })
 class FileView extends Component {
   state = {
-    activeFs:        [],
-    showLevels:      ALL_LEVELS,
-    showTimestamp:   true,
-    showLinenumbers: true,
+    activeFs:          [],
+    showLevels:        ALL_LEVELS,
+    showTimestamp:     true,
+    showLinenumbers:   true,
+    scrollToLine:      0,
+    lastScrolledIndex: -1,
+  }
+
+
+  _nextError = () => {
+    const {content} = this.props
+    const index     = content.findIndex((line, i) => i > this.state.lastScrolledIndex && line.get('level').toLowerCase() === 'error')
+    if (index > -1) {
+      this.setState({
+        scrollToLine:      index,
+        lastScrolledIndex: index,
+      })
+    } else {
+      this.setState({
+        lastScrolledIndex: -1,
+      })
+    }
   }
 
   componentWillMount() {
@@ -113,7 +131,14 @@ class FileView extends Component {
                    location={location}
                    showLevels={this.state.showLevels}
                    showLinenumbers={this.state.showLinenumbers}
-                   showTimestamp={this.state.showTimestamp}/>
+                   showTimestamp={this.state.showTimestamp}
+                   scrollToLine={this.state.scrollToLine}
+                   onScroll={(scrollTop) => {
+                     console.log('file-view.js@: scroll', scrollTop)
+                     this.scrollTop = scrollTop
+                     // this.setState({currentScroll: scrollTop})
+                   }}
+        />
     } else {
       contentComponent = <div>File is empty</div>
     }
@@ -151,7 +176,7 @@ class FileView extends Component {
             })
           }}>Timestamps</Checkbox>
 
-
+          <Button onClick={this._nextError}>Next Error</Button>
         </div>
         {contentComponent}
       </div>

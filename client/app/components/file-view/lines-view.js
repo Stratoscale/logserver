@@ -1,4 +1,5 @@
 import React, {Component} from 'react'
+import _noop from 'lodash/noop'
 import cn from 'classnames'
 import {Set, Map} from 'immutable'
 import {Tag} from 'antd'
@@ -41,6 +42,8 @@ class LinesView extends Component {
     showTimestamp:   PropTypes.bool,
     showLinenumbers: PropTypes.bool,
     showLevels:      ImmutablePropTypes.set,
+    scrollToLine:    PropTypes.number,
+    onScroll:        PropTypes.func,
   }
 
   static defaultProps = {
@@ -48,6 +51,8 @@ class LinesView extends Component {
     showTimestamp:   false,
     showLinenumbers: false,
     showLevels:      Set(),
+    scrollToLine:    0,
+    onScroll:        _noop,
   }
 
   componentWillReceiveProps({lines, showLevels, showFilename}) {
@@ -174,16 +179,17 @@ class LinesView extends Component {
   }
 
   _renderLines = () => {
-    const {location = {}} = this.props
-    const {lines}         = this.state
+    const {location = {}, onScroll, scrollToLine} = this.props
+    const {lines}                                 = this.state
 
     const {line = 0} = queryString.parse(location.search)
+
     return (
       <AutoSizer>
         {({height, width}) => (
           <Grid
             ref={node => this.grid = node}
-            scrollToRow={Math.min(lines.size, Number(line))}
+            scrollToRow={scrollToLine || Math.min(lines.size, Number(line))}
             width={width}
             height={height}
             rowCount={lines.size}
@@ -191,6 +197,9 @@ class LinesView extends Component {
             cellRenderer={this._cellRenderer}
             columnCount={this._getColumnCount()}
             columnWidth={this._getColumnWidth}
+            onScroll={({scrollTop}) => {
+              onScroll(Math.round(scrollTop / 8))
+            }}
           />
         )}
       </AutoSizer>
