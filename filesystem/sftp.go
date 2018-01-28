@@ -45,7 +45,7 @@ func NewSFTP(u *url.URL) (FileSystem, error) {
 	hp := hostPort(u.Host)
 	conn, err := ssh.Dial("tcp", hp, config)
 	if err != nil {
-		return nil, fmt.Errorf("dial %s: %s", hp, err)
+		return nil, fmt.Errorf("dial: %s", err)
 	}
 
 	client, err := sftp.NewClient(conn)

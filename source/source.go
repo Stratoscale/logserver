@@ -47,9 +47,10 @@ func New(c []Config, cache gcache.Cache) (Sources, error) {
 			fs, err = filesystem.NewNginx(u)
 		}
 		if err != nil {
-			return nil, err
+			log.WithError(err).Errorf("Failed adding source %s(%s)", srcDesc.Name, srcDesc.URL)
+			continue
 		}
-		log.Infof("Opened: %s", u)
+		log.Infof("Opened %s: %s", srcDesc.Name, srcDesc.URL)
 		if srcDesc.OpenTarFiles {
 			fs = targz.New(fs, cache, srcDesc.URL+"/")
 		}
