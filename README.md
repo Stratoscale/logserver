@@ -44,6 +44,8 @@ The json should be a dict with the following keys:
 - `url` (URL string with [supported schemes](./README.md#supported-url-schemes)): URL of source.
 - `open_tar_files` (bool): Weather to treat tar files as directories, used for logs that are packed
                            into a tar file.
+- `open_journal` (string): Open a journalctl directory as a log file. The value
+                           should be the journalctl directory from the source root.
 
 #### Supported URL Schemes
 

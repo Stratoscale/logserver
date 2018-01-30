@@ -14,8 +14,13 @@ var log = logrus.WithField("pkg", "config")
 
 // Config is used to configure a filesystem source
 type Config struct {
-	Name         string `json:"name"`
-	URL          string `json:"url"`
+	Name string `json:"name"`
+	URL  string `json:"url"`
+	Flags
+}
+
+// Flags are configuration options for a source
+type Flags struct {
 	OpenTarFiles bool   `json:"open_tar_files"`
 	OpenJournal  string `json:"open_journal"`
 }

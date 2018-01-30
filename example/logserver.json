@@ -45,6 +45,7 @@
     }
   ],
   "dynamic": {
-    "root": "./"
+    "root": "./",
+    "open_journal": "/journal"
   }
 }

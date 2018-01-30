@@ -274,6 +274,12 @@ func TestHandler(t *testing.T) {
 							IsDir:     false,
 							Instances: []engine.FileInstance{{Size: 0, FS: "node1"}},
 						},
+						{
+							Key:       "journal",
+							Path:      engine.Path{"journal"},
+							IsDir:     false,
+							Instances: []engine.FileInstance{{Size: 4096, FS: "node2"}},
+						},
 					},
 				},
 				{
@@ -294,6 +300,12 @@ func TestHandler(t *testing.T) {
 							Path:      engine.Path{"service1.log"},
 							IsDir:     false,
 							Instances: []engine.FileInstance{{Size: 0, FS: "node2"}},
+						},
+						{
+							Key:       "journal",
+							Path:      engine.Path{"journal"},
+							IsDir:     false,
+							Instances: []engine.FileInstance{{Size: 4096, FS: "node2"}},
 						},
 					},
 				},
