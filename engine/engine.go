@@ -405,7 +405,8 @@ func (h *handler) read(ctx context.Context, send chan<- *Response, req Request, 
 			FS:     node.Name,
 			Path:   strings.Split(path, "/"),
 		}
-		sentAny = false
+		sentAny      = false
+		parserMemory = new(parse.Memory)
 	)
 
 	// set initial buffer size to 64kb and allow it to increase up to 1mb
@@ -419,7 +420,7 @@ func (h *handler) read(ctx context.Context, send chan<- *Response, req Request, 
 		if err := ctx.Err(); err != nil {
 			return
 		}
-		line := h.parse.Parse(path, scanner.Bytes())
+		line := h.parse.Parse(path, scanner.Bytes(), parserMemory)
 
 		// if a search was defined, check for match and if no match was found continue
 		// without sending the line

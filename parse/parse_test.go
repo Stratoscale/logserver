@@ -121,7 +121,7 @@ func TestParser(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, parsers.Parse(tt.logName, []byte(tt.line)))
+			assert.Equal(t, tt.want, parsers.Parse(tt.logName, []byte(tt.line), &Memory{}))
 		})
 	}
 }

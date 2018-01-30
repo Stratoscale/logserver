@@ -68,27 +68,45 @@ type parser struct {
 	glob   glob.Glob
 }
 
-func (ps Parse) Parse(logName string, line []byte) *Log {
+// Memory is used to remember which parser applied for a file
+// the same Memory object should be passed to Parse when parsing lines from the same file
+type Memory struct {
+	parser *parser
+}
+
+// noParser is used for files which no other defined parser fitted them
+var noParser parser
+
+func (ps Parse) Parse(logName string, line []byte, mem *Memory) *Log {
+
+	// check for memory for file that was already parsed with a parser
+	if mem.parser != nil {
+		return mem.parser.parse(line)
+	}
+
 	for _, p := range ps {
 		if !p.glob.Match(logName) {
 			continue
 		}
 		log := p.parse(line)
 		if log != nil {
+			mem.parser = &p
 			return log
 		}
 	}
-	return &Log{Msg: string(line)}
+	mem.parser = &noParser
+	return mem.parser.parse(line)
 }
 
 func (p *parser) parse(line []byte) *Log {
 	switch {
 	case len(p.JsonMapping) > 0:
 		return p.parseJson(line)
-	case p.Regexp != "":
+	case p.regexp != nil:
 		return p.parseRegexp(line)
+	default:
+		return &Log{Msg: string(line)} // no parser
 	}
-	panic("invalid parser")
 }
 
 func (p *parser) parseJson(line []byte) *Log {
