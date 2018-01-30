@@ -1,9 +1,0 @@
-FROM golang:1.9.2-alpine as server
-WORKDIR /go/src/github.com/Stratoscale/logserver
-COPY . .
-RUN go build -o /logserver
-
-FROM alpine:3.7
-COPY --from=server /logserver /usr/bin/logserver
-COPY ./client/dist /client/dist
-ENTRYPOINT ["logserver"]

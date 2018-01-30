@@ -1,5 +1,7 @@
-FROM golang:1.9.2-alpine as server
+FROM golang:1.9.3 as server
 WORKDIR /go/src/github.com/Stratoscale/logserver
+#
+RUN apt update && apt install libsystemd-dev
 COPY . .
 RUN go build -o /logserver
 
@@ -11,7 +13,8 @@ WORKDIR /client
 RUN yarn
 RUN npm run build
 
-FROM alpine:3.7
+FROM ubuntu:16.04
+RUN apt update && apt install libsystemd-dev
 COPY --from=server /logserver /usr/bin/logserver
 COPY --from=client /client/dist /client/dist
 ENTRYPOINT ["logserver"]
