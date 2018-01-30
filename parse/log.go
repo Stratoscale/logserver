@@ -45,7 +45,7 @@ func (l *Log) parseTime(timeFormats []string, timeString string) {
 	}
 }
 
-var keyword = regexp.MustCompile(`(%\(([^)]+\))[diouxXeEfFgGcrs])`)
+var keyword = regexp.MustCompile(`%(\(([^)]+)\)\d*\.?\d*)?[diouxXeEfFgGcrs]`)
 
 func (l *Log) injectArgs(args interface{}) {
 	l.Msg = strings.Replace(l.Msg, "%s", "%v", -1)
@@ -63,10 +63,11 @@ func (l *Log) injectArgs(args interface{}) {
 	// normal case is when a dict or a list is injected to the string with positional or keyword arguments
 	switch args := args.(type) {
 	case []interface{}:
+		l.Msg = keyword.ReplaceAllString(l.Msg, "%v")
 		l.Msg = fmt.Sprintf(l.Msg, args...)
 	case map[string]interface{}:
 		l.Msg = keyword.ReplaceAllStringFunc(l.Msg, func(src string) string {
-			key := src[2 : len(src)-2]
+			key := keyword.FindStringSubmatch(src)[2]
 			val, ok := args[key]
 			if !ok {
 				return src
