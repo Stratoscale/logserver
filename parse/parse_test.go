@@ -72,6 +72,26 @@ func TestParser(t *testing.T) {
 			},
 		},
 		{
+			name:    "jsonlog/map args",
+			logName: "file.jsonlog",
+			line:    `{"args": {"num": 4.1}, "msg": "number %(num)4.2f", "levelname": "INFO", "created": 1514211785.448693}`,
+			want: &Log{
+				Msg:   "number 4.1",
+				Time:  &time1,
+				Level: "INFO",
+			},
+		},
+		{
+			name:    "jsonlog/map args",
+			logName: "file.jsonlog",
+			line:    `{"args": {"num": 4.1}, "msg": "number %(num).2f", "levelname": "INFO", "created": 1514211785.448693}`,
+			want: &Log{
+				Msg:   "number 4.1",
+				Time:  &time1,
+				Level: "INFO",
+			},
+		},
+		{
 			name:    "jsonlog/map into %s",
 			logName: "file.jsonlog",
 			line:    `{"args": {"key": "value", "key1": "value1"}, "levelname": "INFO", "msg": "Message: %s", "created": 1514211785.448693}`,
