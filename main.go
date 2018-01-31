@@ -48,6 +48,18 @@ type config struct {
 	Cache   cache.Config    `json:"cache"`
 }
 
+func (c config) journal() string {
+	if name := c.Dynamic.OpenJournal; name != "" {
+		return name
+	}
+	for _, src := range c.Sources {
+		if name := src.OpenJournal; name != "" {
+			return name
+		}
+	}
+	return ""
+}
+
 func main() {
 	flag.Parse()
 
@@ -62,8 +74,20 @@ func main() {
 
 	cfg := loadConfig(options.config)
 
+	log.Infof("Loading parsers...")
 	parser, err := parse.New(cfg.Parsers)
 	failOnErr(err, "Creating parsers")
+
+	// add journal parser if necessary
+	if journalName := cfg.journal(); journalName != "" {
+		log.Infof("Adding a journalctl parser")
+		err := parser.AppendJournal(journalName)
+		if err != nil {
+			log.WithError(err).Warn("Failed adding a journalctl parser")
+		}
+	}
+
+	log.Printf("Loaded with %d parsers", len(parser))
 
 	cache := cache.New(cfg.Cache)
 
