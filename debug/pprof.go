@@ -1,14 +1,15 @@
 package debug
 
 import (
-	"net/http"
 	"net/http/pprof"
+
+	"github.com/gorilla/mux"
 )
 
-func PProfHandle(m *http.ServeMux) {
-	m.HandleFunc("/debug/pprof/", pprof.Index)
-	m.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-	m.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	m.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-	m.HandleFunc("/debug/pprof/trace", pprof.Trace)
+func PProfHandle(r *mux.Router) {
+	r.PathPrefix("/debug/pprof/").HandlerFunc(pprof.Index)
+	r.PathPrefix("/debug/pprof/cmdline").HandlerFunc(pprof.Cmdline)
+	r.PathPrefix("/debug/pprof/profile").HandlerFunc(pprof.Profile)
+	r.PathPrefix("/debug/pprof/symbol").HandlerFunc(pprof.Symbol)
+	r.PathPrefix("/debug/pprof/trace").HandlerFunc(pprof.Trace)
 }

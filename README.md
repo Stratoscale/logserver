@@ -37,6 +37,7 @@ The json should be a dict with the following keys:
 - `parsers` (list of [parser dicts](./README.md#parser-dict)): Which parsers to apply to the log files.
 - `global` (dict of [attributes](./README.md#global-dict)): General configuration
 - `cache` (dict of [attributes](./README.md#cache-dict)): Cache configuration
+- `route` (dict of [attributes](./README.md#route-dict)): Route configuration
 
 #### Source Dict
 
@@ -101,3 +102,7 @@ The UI expects the following keys in each parsed log:
 - `size`
 - `expiration`
 
+#### Route Dict
+
+- `base_path`
+- `root_path`
