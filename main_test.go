@@ -11,7 +11,6 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/Stratoscale/logserver/engine"
 	"github.com/Stratoscale/logserver/parse"
-	"github.com/Stratoscale/logserver/router"
 	"github.com/Stratoscale/logserver/source"
 	"github.com/bluele/gcache"
 	"github.com/gorilla/websocket"
@@ -40,12 +39,7 @@ func TestHandler(t *testing.T) {
 	parser, err := parse.New(cfg.Parsers)
 	require.Nil(t, err)
 
-	h, err := router.New(router.Config{
-		Engine: engine.New(engine.Config{}, sources, parser, cache),
-	})
-	require.Nil(t, err)
-
-	s := httptest.NewServer(h)
+	s := httptest.NewServer(engine.New(engine.Config{}, sources, parser, cache))
 	defer s.Close()
 
 	tests := []struct {
@@ -317,7 +311,7 @@ func TestHandler(t *testing.T) {
 		},
 	}
 
-	addr := "ws://" + s.Listener.Addr().String() + "/_ws"
+	addr := "ws://" + s.Listener.Addr().String()
 
 	for _, tt := range tests {
 		tt := tt

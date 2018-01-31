@@ -9,15 +9,13 @@ import (
 
 	"github.com/Stratoscale/logserver/engine"
 	"github.com/Stratoscale/logserver/parse"
-	"github.com/Stratoscale/logserver/router"
+	"github.com/Stratoscale/logserver/route"
 	"github.com/Stratoscale/logserver/source"
 	"github.com/bluele/gcache"
+	"github.com/gorilla/mux"
 )
 
-const (
-	defaultMarkFile = "logstack.enable"
-	staticPath      = "/_static"
-)
+const defaultMarkFile = "logstack.enable"
 
 // Config is dynamic configuration
 type Config struct {
@@ -26,18 +24,18 @@ type Config struct {
 	source.Flags
 }
 
-func New(c Config, engineConfig engine.Config, p parse.Parse, cache gcache.Cache) (http.Handler, error) {
+func New(c Config, engineCfg engine.Config, routeCfg route.Config, p parse.Parse, cache gcache.Cache) (http.Handler, error) {
 	var err error
 	c.Root, err = filepath.Abs(c.Root)
 	if err != nil {
 		return nil, err
 	}
 	h := &handler{
-		Config:       c,
-		engineConfig: engineConfig,
-		parse:        p,
-		cache:        cache,
-		static:       http.StripPrefix(staticPath+"/", http.FileServer(http.Dir("./client/dist"))),
+		Config:    c,
+		parse:     p,
+		cache:     cache,
+		engineCfg: engineCfg,
+		routeCfg:  routeCfg,
 	}
 	if h.MarkFile == "" {
 		h.MarkFile = defaultMarkFile
@@ -47,17 +45,14 @@ func New(c Config, engineConfig engine.Config, p parse.Parse, cache gcache.Cache
 
 type handler struct {
 	Config
-	engineConfig engine.Config
-	parse        parse.Parse
-	cache        gcache.Cache
-	static       http.Handler
+	parse     parse.Parse
+	cache     gcache.Cache
+	route     route.Config
+	engineCfg engine.Config
+	routeCfg  route.Config
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if strings.HasPrefix(r.URL.Path, staticPath) {
-		h.static.ServeHTTP(w, r)
-		return
-	}
 	root, err := h.searchRoot(r.URL.Path)
 	if err != nil {
 		http.NotFound(w, r)
@@ -92,11 +87,26 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer src.CloseSources()
 
 	serverPath := root[len(h.Root):]
+	rtr := mux.NewRouter()
 
-	rtr, err := router.New(router.Config{
-		Engine:   engine.New(h.engineConfig, src, h.parse, h.cache),
-		BasePath: serverPath,
-	})
+	// add index.html serving at the serverPath which is the dynamic root
+	err = route.Index(rtr, route.Config{
+		// BasePath is used to determined the websocket path
+		BasePath: filepath.Join(h.routeCfg.RootPath, serverPath),
+		// RootPath is for taking the static files, which are served by the root handler
+		RootPath: ""})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// add websocket handler on the server root
+	route.Engine(
+		rtr,
+		route.Config{RootPath: ""},
+		engine.New(h.engineCfg, src, h.parse, h.cache),
+	)
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

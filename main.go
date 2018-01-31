@@ -14,9 +14,10 @@ import (
 	"github.com/Stratoscale/logserver/dynamic"
 	"github.com/Stratoscale/logserver/engine"
 	"github.com/Stratoscale/logserver/parse"
-	"github.com/Stratoscale/logserver/router"
+	"github.com/Stratoscale/logserver/route"
 	"github.com/Stratoscale/logserver/source"
 	"github.com/bakins/logrus-middleware"
+	"github.com/gorilla/mux"
 )
 
 var log = logrus.WithField("pkg", "main")
@@ -46,6 +47,7 @@ type config struct {
 	Parsers []parse.Config  `json:"parsers"`
 	Dynamic dynamic.Config  `json:"dynamic"`
 	Cache   cache.Config    `json:"cache"`
+	Route   route.Config    `json:"route"`
 }
 
 func (c config) journal() string {
@@ -91,33 +93,36 @@ func main() {
 
 	cache := cache.New(cfg.Cache)
 
-	var h http.Handler
+	r := mux.NewRouter()
+	route.Static(r, cfg.Route)
 
 	if !options.dynamic {
 		s, err := source.New(cfg.Sources, cache)
 		failOnErr(err, "Creating config")
 		defer s.CloseSources()
 
-		h, err = router.New(router.Config{
-			Engine: engine.New(cfg.Global, s, parser, cache),
-		})
-		failOnErr(err, "Creating router")
+		failOnErr(route.Index(r, cfg.Route), "Creating index")
+		route.Engine(r, cfg.Route, engine.New(cfg.Global, s, parser, cache))
+
 	} else {
 		var err error
-		h, err = dynamic.New(cfg.Dynamic, cfg.Global, parser, cache)
+		h, err := dynamic.New(cfg.Dynamic, cfg.Global, cfg.Route, parser, cache)
 		failOnErr(err, "Creating dynamic handler")
 		logMW := logrusmiddleware.Middleware{Logger: log.Logger}
 		h = logMW.Handler(h, "")
+		r.PathPrefix(cfg.Route.RootPath).Handler(http.StripPrefix(cfg.Route.RootPath, h))
 	}
+
+	// add debug handlers
+	if options.debug {
+		debug.PProfHandle(r)
+	}
+
+	// add redirect of request that are not to the proxy path
+	route.Redirect(r, cfg.Route)
 
 	log.Infof("Serving on http://%s", options.addr)
-	m := http.NewServeMux()
-	m.Handle("/", h)
-	if options.debug {
-		debug.PProfHandle(m)
-	}
-
-	err = http.ListenAndServe(options.addr, m)
+	err = http.ListenAndServe(options.addr, r)
 	failOnErr(err, "Serving")
 }
 
