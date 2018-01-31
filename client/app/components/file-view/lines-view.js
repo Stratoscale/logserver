@@ -97,7 +97,7 @@ class LinesView extends Component {
 
       if (showTimestamp) {
         columns.unshift({
-          width: 125,
+          width: 135,
           name:  'timestamp',
         })
       }
