@@ -7,13 +7,13 @@
     {
       "name": "node2",
       "url": "file://./example/log2",
-      "open_tar_files": true,
+      "open_tar": true,
       "open_journal": "/journal"
     },
     {
       "name": "node3",
       "url": "file://./example/log3",
-      "open_tar_files": true
+      "open_tar": true
     },
     {
       "name": "nginx-html",

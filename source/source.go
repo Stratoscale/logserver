@@ -21,8 +21,8 @@ type Config struct {
 
 // Flags are configuration options for a source
 type Flags struct {
-	OpenTarFiles bool   `json:"open_tar_files"`
-	OpenJournal  string `json:"open_journal"`
+	OpenTar     bool   `json:"open_tar"`
+	OpenJournal string `json:"open_journal"`
 }
 
 type Sources []Source
@@ -47,8 +47,8 @@ func New(c []Config, cache gcache.Cache) (Sources, error) {
 		case "sftp", "ssh":
 			fs, err = filesystem.NewSFTP(u)
 		case "nginx+http", "nginx+https":
-			if srcDesc.OpenTarFiles {
-				return nil, fmt.Errorf("can't have 'open_tar_files' option over http")
+			if srcDesc.OpenTar {
+				return nil, fmt.Errorf("can't have 'open_tar' option over http")
 			}
 			fs, err = filesystem.NewNginx(u)
 		}
@@ -57,7 +57,7 @@ func New(c []Config, cache gcache.Cache) (Sources, error) {
 			continue
 		}
 		log.Infof("Opened %s: %s", srcDesc.Name, srcDesc.URL)
-		if srcDesc.OpenTarFiles {
+		if srcDesc.OpenTar {
 			fs = tar.Wrap(fs, cache, srcDesc.URL+"/")
 		}
 		if srcDesc.OpenJournal != "" {
