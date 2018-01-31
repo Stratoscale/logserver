@@ -48,6 +48,18 @@ type config struct {
 	Cache   cache.Config    `json:"cache"`
 }
 
+func (c config) journal() string {
+	if name := c.Dynamic.OpenJournal; name != "" {
+		return name
+	}
+	for _, src := range c.Sources {
+		if name := src.OpenJournal; name != "" {
+			return name
+		}
+	}
+	return ""
+}
+
 func main() {
 	flag.Parse()
 
@@ -58,12 +70,24 @@ func main() {
 
 	// validate address
 	_, _, err := net.SplitHostPort(options.addr)
-	failOnErr(err, "bad address value: %s", options.addr)
+	failOnErr(err, "Bad address value: %s", options.addr)
 
 	cfg := loadConfig(options.config)
 
+	log.Infof("Loading parsers...")
 	parser, err := parse.New(cfg.Parsers)
-	failOnErr(err, "creating parsers")
+	failOnErr(err, "Creating parsers")
+
+	// add journal parser if necessary
+	if journalName := cfg.journal(); journalName != "" {
+		log.Infof("Adding a journalctl parser")
+		err := parser.AppendJournal(journalName)
+		if err != nil {
+			log.WithError(err).Warn("Failed adding a journalctl parser")
+		}
+	}
+
+	log.Printf("Loaded with %d parsers", len(parser))
 
 	cache := cache.New(cfg.Cache)
 
@@ -71,17 +95,17 @@ func main() {
 
 	if !options.dynamic {
 		s, err := source.New(cfg.Sources, cache)
-		failOnErr(err, "creating config")
+		failOnErr(err, "Creating config")
 		defer s.CloseSources()
 
 		h, err = router.New(router.Config{
 			Engine: engine.New(cfg.Global, s, parser, cache),
 		})
-		failOnErr(err, "creating router")
+		failOnErr(err, "Creating router")
 	} else {
 		var err error
 		h, err = dynamic.New(cfg.Dynamic, cfg.Global, parser, cache)
-		failOnErr(err, "creating dynamic handler")
+		failOnErr(err, "Creating dynamic handler")
 		logMW := logrusmiddleware.Middleware{Logger: log.Logger}
 		h = logMW.Handler(h, "")
 	}
@@ -94,7 +118,7 @@ func main() {
 	}
 
 	err = http.ListenAndServe(options.addr, m)
-	failOnErr(err, "serving")
+	failOnErr(err, "Serving")
 }
 
 func loadConfig(fileName string) config {
@@ -104,7 +128,7 @@ func loadConfig(fileName string) config {
 
 	var cfg config
 	err = json.NewDecoder(f).Decode(&cfg)
-	failOnErr(err, "decode file")
+	failOnErr(err, "Decode config file")
 	return cfg
 }
 

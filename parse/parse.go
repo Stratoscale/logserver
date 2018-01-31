@@ -19,6 +19,10 @@ const (
 	KeyArgs  = "args"
 )
 
+// noParserAfter determines how many line should be parsed before choosing a no-parser
+// for a specific file
+const noParserAfter = 1000
+
 type Config struct {
 	Glob        string            `json:"glob"`
 	JsonMapping map[string]string `json:"json_mapping"`
@@ -72,16 +76,19 @@ type parser struct {
 // the same Memory object should be passed to Parse when parsing lines from the same file
 type Memory struct {
 	parser *parser
+	count  int
 }
-
-// noParser is used for files which no other defined parser fitted them
-var noParser parser
 
 func (ps Parse) Parse(logName string, line []byte, mem *Memory) *Log {
 
 	// check for memory for file that was already parsed with a parser
 	if mem.parser != nil {
-		return mem.parser.parse(line)
+		parsed := mem.parser.parse(line)
+		if parsed != nil {
+			return parsed
+		} else {
+			return &Log{Msg: string(line)}
+		}
 	}
 
 	for _, p := range ps {
@@ -94,8 +101,11 @@ func (ps Parse) Parse(logName string, line []byte, mem *Memory) *Log {
 			return log
 		}
 	}
-	mem.parser = &noParser
-	return mem.parser.parse(line)
+	mem.count++
+	if mem.count >= noParserAfter {
+		mem.parser = &parser{}
+	}
+	return &Log{Msg: string(line)}
 }
 
 func (p *parser) parse(line []byte) *Log {
@@ -105,7 +115,8 @@ func (p *parser) parse(line []byte) *Log {
 	case p.regexp != nil:
 		return p.parseRegexp(line)
 	default:
-		return &Log{Msg: string(line)} // no parser
+		// default no-parser
+		return &Log{Msg: string(line)}
 	}
 }
 

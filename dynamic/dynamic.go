@@ -19,9 +19,11 @@ const (
 	staticPath      = "/_static"
 )
 
+// Config is dynamic configuration
 type Config struct {
 	Root     string `json:"root"`
 	MarkFile string `json:"mark_file"`
+	source.Flags
 }
 
 func New(c Config, engineConfig engine.Config, p parse.Parse, cache gcache.Cache) (http.Handler, error) {
@@ -76,9 +78,9 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, file := range files {
 		if file.Mode().IsDir() {
 			srcConfig = append(srcConfig, source.Config{
-				Name:         file.Name(),
-				URL:          "file://" + filepath.Join(root, file.Name()),
-				OpenTarFiles: true,
+				Name:  file.Name(),
+				URL:   "file://" + filepath.Join(root, file.Name()),
+				Flags: h.Config.Flags,
 			})
 		}
 	}

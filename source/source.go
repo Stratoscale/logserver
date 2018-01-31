@@ -6,7 +6,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/Stratoscale/logserver/filesystem"
-	"github.com/Stratoscale/logserver/filesystem/targz"
+	"github.com/Stratoscale/logserver/filesystem/tar"
 	"github.com/bluele/gcache"
 )
 
@@ -14,9 +14,15 @@ var log = logrus.WithField("pkg", "config")
 
 // Config is used to configure a filesystem source
 type Config struct {
-	Name         string `json:"name"`
-	URL          string `json:"url"`
-	OpenTarFiles bool   `json:"open_tar_files"`
+	Name string `json:"name"`
+	URL  string `json:"url"`
+	Flags
+}
+
+// Flags are configuration options for a source
+type Flags struct {
+	OpenTar     bool   `json:"open_tar"`
+	OpenJournal string `json:"open_journal"`
 }
 
 type Sources []Source
@@ -41,8 +47,8 @@ func New(c []Config, cache gcache.Cache) (Sources, error) {
 		case "sftp", "ssh":
 			fs, err = filesystem.NewSFTP(u)
 		case "nginx+http", "nginx+https":
-			if srcDesc.OpenTarFiles {
-				return nil, fmt.Errorf("can't have 'open_tar_files' option over http")
+			if srcDesc.OpenTar {
+				return nil, fmt.Errorf("can't have 'open_tar' option over http")
 			}
 			fs, err = filesystem.NewNginx(u)
 		}
@@ -51,8 +57,11 @@ func New(c []Config, cache gcache.Cache) (Sources, error) {
 			continue
 		}
 		log.Infof("Opened %s: %s", srcDesc.Name, srcDesc.URL)
-		if srcDesc.OpenTarFiles {
-			fs = targz.New(fs, cache, srcDesc.URL+"/")
+		if srcDesc.OpenTar {
+			fs = tar.Wrap(fs, cache, srcDesc.URL+"/")
+		}
+		if srcDesc.OpenJournal != "" {
+			fs = filesystem.WrapJournal(fs, srcDesc.OpenJournal)
 		}
 		s = append(s, Source{srcDesc.Name, fs})
 	}

@@ -7,12 +7,13 @@
     {
       "name": "node2",
       "url": "file://./example/log2",
-      "open_tar_files": true
+      "open_tar": true,
+      "open_journal": "/journal"
     },
     {
       "name": "node3",
       "url": "file://./example/log3",
-      "open_tar_files": true
+      "open_tar": true
     },
     {
       "name": "nginx-html",
@@ -37,13 +38,14 @@
       ]
     },
     {
-      "regexp": "(?P<timestamp>\\d{4}-\\d{2}-\\d{2}\\W\\d{2}:\\d{2}:\\d{2},\\d{3}.\\d{3})\\W\\d+\\W(?P<level>[[:alpha:]]+)\\W(?P<module>[^\\.]+)\\.(?P<function>[^\\W]+)\\W\\[[^]+]\\]\\W(?P<msg>.*)",
+      "regexp": "(?P<time>\\d{4}-\\d{2}-\\d{2}\\W\\d{2}:\\d{2}:\\d{2},\\d{3}.\\d{3})\\W\\d+\\W(?P<level>[[:alpha:]]+)\\W(?P<module>[^\\.]+)\\.(?P<function>[^\\W]+)\\W\\[[^]+]\\]\\W(?P<msg>.*)",
       "time_formats": [
         "2006-01-02 15:04:05.000"
       ]
     }
   ],
   "dynamic": {
-    "root": "./"
+    "root": "./",
+    "open_journal": "/journal"
   }
 }
