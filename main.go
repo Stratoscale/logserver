@@ -94,15 +94,21 @@ func main() {
 	cache := cache.New(cfg.Cache)
 
 	r := mux.NewRouter()
-	route.Static(r, cfg.Route)
+	route.Static(r)
 
 	if !options.dynamic {
 		s, err := source.New(cfg.Sources, cache)
 		failOnErr(err, "Creating config")
 		defer s.CloseSources()
 
-		failOnErr(route.Index(r, cfg.Route), "Creating index")
-		route.Engine(r, cfg.Route, engine.New(cfg.Global, s, parser, cache))
+		failOnErr(route.Index(r, "/", cfg.Route), "Creating index")
+
+		// put websocket handler behind the root and behined the proxy path
+		eng := engine.New(cfg.Global, s, parser, cache)
+		route.Engine(r, "/", eng)
+		if cfg.Route.RootPath != "" && cfg.Route.RootPath != "/" {
+			route.Engine(r, cfg.Route.RootPath, eng)
+		}
 
 	} else {
 		var err error

@@ -1,4 +1,4 @@
-.PHONY: test run-example run-logstack-example client
+.PHONY: test run-example run-example-dynamic client
 
 test:
 	go test -race ./... -timeout 30s
