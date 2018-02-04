@@ -153,7 +153,11 @@ type FileInstance struct {
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Infof("New WS Client from: %s", r.RemoteAddr)
 	defer log.Info("Disconnected WS Client from: %s", r.RemoteAddr)
-	u := new(websocket.Upgrader)
+	u := &websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+		        return true
+		},
+	}
 	conn, err := u.Upgrade(w, r, nil)
 	if err != nil {
 		log.WithError(err).Errorf("Failed upgrade from %s", r.RemoteAddr)
