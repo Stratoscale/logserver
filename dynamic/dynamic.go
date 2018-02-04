@@ -90,7 +90,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	rtr := mux.NewRouter()
 
 	// add index.html serving at the serverPath which is the dynamic root
-	err = route.Index(rtr, route.Config{
+	err = route.Index(rtr, serverPath, route.Config{
 		// BasePath is used to determined the websocket path
 		BasePath: filepath.Join(h.routeCfg.RootPath, serverPath),
 		// RootPath is for taking the static files, which are served by the root handler
@@ -101,11 +101,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// add websocket handler on the server root
-	route.Engine(
-		rtr,
-		route.Config{RootPath: ""},
-		engine.New(h.engineCfg, src, h.parse, h.cache),
-	)
+	route.Engine(rtr, "/", engine.New(h.engineCfg, src, h.parse, h.cache))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
