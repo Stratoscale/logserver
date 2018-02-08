@@ -36,6 +36,7 @@ class FileView extends Component {
     activeFs:        [],
     showTimestamp:   true,
     showLinenumbers: true,
+    showThreadName:  true,
   }
 
   componentWillMount() {
@@ -134,6 +135,7 @@ class FileView extends Component {
                    showLevels={levels}
                    showLinenumbers={this.state.showLinenumbers}
                    showTimestamp={this.state.showTimestamp}
+                   showThreadName={this.state.showThreadName}
         />
     } else {
       contentComponent = <div>File is empty</div>
@@ -171,6 +173,12 @@ class FileView extends Component {
               showTimestamp: checked,
             })
           }}>Timestamps</Checkbox>
+
+          <Checkbox checked={this.state.showThreadName} onChange={({target: {checked}}) => {
+            this.setState({
+              showThreadName: checked,
+            })
+          }}>Thread Name</Checkbox>
 
 
         </div>

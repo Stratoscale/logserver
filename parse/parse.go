@@ -17,6 +17,7 @@ const (
 	KeyLevel = "level"
 	KeyMsg   = "msg"
 	KeyArgs  = "args"
+	KeyThreadName  = "threadName"
 )
 
 // noParserAfter determines how many line should be parsed before choosing a no-parser
@@ -139,6 +140,13 @@ func (p *parser) parseJson(line []byte) *Log {
 		if log.Level, ok = j[jsonKey].(string); !ok {
 			return nil
 		}
+		delete(j, jsonKey)
+	}
+	if jsonKey, ok := p.JsonMapping[KeyThreadName]; ok {
+		if log.threadName, ok = j[jsonKey].(string); !ok {
+			return nil
+		}
+		fmt.Printf("thread: %s\n", log.threadName)
 		delete(j, jsonKey)
 	}
 
