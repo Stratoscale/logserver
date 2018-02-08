@@ -1,7 +1,7 @@
 .PHONY: test run-example run-example-dynamic client
 
 test:
-	go test -race ./... -timeout 30s
+	go test  ./... -timeout 30s
 
 run-example:
 	go run ./main.go -debug -config ./example/logserver.json
