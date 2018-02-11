@@ -43,7 +43,7 @@ class LinesView extends Component {
   }
 
   static propTypes = {
-    showThreadName:   PropTypes.bool,
+    showThreadName:  PropTypes.bool,
     showFilename:    PropTypes.bool,
     showTimestamp:   PropTypes.bool,
     showLinenumbers: PropTypes.bool,
@@ -99,7 +99,7 @@ class LinesView extends Component {
 
       if (showThreadName) {
         columns.unshift({
-          width: 135,
+          width: 100,
           name:  'threadName',
         })
       }
@@ -201,7 +201,7 @@ class LinesView extends Component {
       }
       case 'threadName': {
         content = line.get('threadName') ?
-          <Tag key={line.get('threadName')} >{line.get('threadName')}</Tag> : 'no-name'
+          <Tag key={line.get('threadName')} >{line.get('threadName')}</Tag> : null
         break
       }
       case 'timestamp': {

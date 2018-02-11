@@ -17,7 +17,9 @@ type Log struct {
 	FileName   string     `json:"file_name"`
 	Line       int        `json:"line"`
 	Offset     int        `json:"offset"`
-	threadName string     `json:threadName`
+	ThreadName string     `json:"threadName,omitempty"`
+	PathName   string     `json:"pathname"`
+	LineNo     string     `json:"lineno"`
 }
 
 func (l *Log) parseTime(timeFormats []string, timeString string) {

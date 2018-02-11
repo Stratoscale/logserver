@@ -36,7 +36,7 @@ class FileView extends Component {
     activeFs:        [],
     showTimestamp:   true,
     showLinenumbers: true,
-    showThreadName:  true,
+    showThreadName:  false,
   }
 
   componentWillMount() {

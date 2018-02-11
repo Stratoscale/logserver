@@ -13,11 +13,13 @@ import (
 type Type string
 
 const (
-	KeyTime  = "time"
-	KeyLevel = "level"
-	KeyMsg   = "msg"
-	KeyArgs  = "args"
-	KeyThreadName  = "threadName"
+	KeyTime       = "time"
+	KeyLevel      = "level"
+	KeyMsg        = "msg"
+	KeyArgs       = "args"
+	KeyThreadName = "threadName"
+	KeyPathName   = "pathname"
+	KeyLineNo     = "lineno"
 )
 
 // noParserAfter determines how many line should be parsed before choosing a no-parser
@@ -143,10 +145,26 @@ func (p *parser) parseJson(line []byte) *Log {
 		delete(j, jsonKey)
 	}
 	if jsonKey, ok := p.JsonMapping[KeyThreadName]; ok {
-		if log.threadName, ok = j[jsonKey].(string); !ok {
+		if log.ThreadName, ok = j[jsonKey].(string); !ok {
 			return nil
 		}
-		fmt.Printf("thread: %s\n", log.threadName)
+		fmt.Printf("thread: %s\n", log.ThreadName)
+		delete(j, jsonKey)
+	}
+
+	if jsonKey, ok := p.JsonMapping[KeyPathName]; ok {
+		if log.PathName, ok = j[jsonKey].(string); !ok {
+			return nil
+		}
+		fmt.Printf("pathname: %s\n", log.PathName)
+		delete(j, jsonKey)
+	}
+
+	if jsonKey, ok := p.JsonMapping[KeyLineNo]; ok {
+		if log.LineNo, ok = j[jsonKey].(string); !ok {
+			return nil
+		}
+		fmt.Printf("lineno (%s): %s\n", jsonKey, log.LineNo)
 		delete(j, jsonKey)
 	}
 
