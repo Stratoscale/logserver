@@ -63,7 +63,6 @@ func Redirect(r *mux.Router, c Config) {
 	}
 	r.PathPrefix(c.RootPath + "/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		dest := r.URL.Path[len(c.RootPath):]
-		log.Printf("Redirecting to %s", dest)
 		http.Redirect(w, r, dest, http.StatusTemporaryRedirect)
 	})
 }

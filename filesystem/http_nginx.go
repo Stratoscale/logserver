@@ -2,6 +2,7 @@ package filesystem
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,9 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"encoding/json"
-
-	loghttp "github.com/motemen/go-loghttp"
+	"github.com/motemen/go-loghttp"
 )
 
 var nginxLine = regexp.MustCompile(`^<a\s.*>(.*)</a>\s+(\d+-\w+-\d{4}\s\d{2}:\d{2})\s+(-|[\d]+)$`)
@@ -41,7 +40,6 @@ func (n *Nginx) head(path string) (*http.Response, error) {
 
 func urlExtend(u url.URL, path string) *url.URL {
 	u.Path = filepath.Join(u.Path, path)
-	fmt.Println("url", (&u).String())
 	return &u
 }
 
