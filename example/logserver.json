@@ -31,7 +31,10 @@
         "msg": "msg",
         "level": "levelname",
         "time": "created",
-        "args": "args"
+        "args": "args",
+	    "thread": "threadName",
+	    "path": "pathname",
+	    "lineno": "lineno"
       },
       "time_formats": [
         "unix_float"

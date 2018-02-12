@@ -43,6 +43,7 @@ class LinesView extends Component {
   }
 
   static propTypes = {
+    showThreadName:  PropTypes.bool,
     showFilename:    PropTypes.bool,
     showTimestamp:   PropTypes.bool,
     showLinenumbers: PropTypes.bool,
@@ -51,6 +52,7 @@ class LinesView extends Component {
   }
 
   static defaultProps = {
+    showThreadName:  false,
     showFilename:    false,
     showTimestamp:   false,
     showLinenumbers: false,
@@ -74,7 +76,7 @@ class LinesView extends Component {
 
   _getColumns = () => {
     const {maxLengths}                                   = this.state
-    const {showFilename, showTimestamp, showLinenumbers} = this.props
+    const {showThreadName, showFilename, showTimestamp, showLinenumbers} = this.props
 
     if (showFilename) {
       return [
@@ -95,6 +97,12 @@ class LinesView extends Component {
         },
       ]
 
+      if (showThreadName) {
+        columns.unshift({
+          width: 100,
+          name:  'thread',
+        })
+      }
       if (showTimestamp) {
         columns.unshift({
           width: 135,
@@ -189,6 +197,11 @@ class LinesView extends Component {
       case 'level': {
         content = line.get('level') ?
           <Tag key={line.get('level')} color={colorByLevel(line.get('level'))}>{line.get('level')}</Tag> : null
+        break
+      }
+      case 'thread': {
+        content = line.get('thread') ?
+          <Tag key={line.get('thread')} >{line.get('thread')}</Tag> : null
         break
       }
       case 'timestamp': {

@@ -19,6 +19,19 @@ func TestParser(t *testing.T) {
 
 	parsers, err := New([]Config{
 		{
+			Glob: "*.stratolog",
+			JsonMapping: map[string]string{
+				"msg":    "msg",
+				"level":  "levelname",
+				"time":   "created",
+				"args":   "args",
+				"thread": "threadName",
+				"path":   "pathname",
+				"lineno": "lineno",
+			},
+			TimeFormats: []string{"unix_float"},
+		},
+		{
 			Glob: "*.jsonlog",
 			JsonMapping: map[string]string{
 				"msg":   "msg",
@@ -51,6 +64,19 @@ func TestParser(t *testing.T) {
 		line    string
 		want    *Log
 	}{
+		{
+			name:    "stratolog/basic",
+			logName: "file.stratolog",
+			line:    `{"process": 36154, "args": ["val1", 0, true], "module": "distributor", "funcName": "_updateDisksInTableStates", "exc_text": null, "name": "my-name", "thread": 140189066323712, "created": 1514211785.448693, "threadName": "DistributorThread", "filename": "distributor.py", "levelno": 20, "processName": "MainProcess", "pathname": "/var/lib/file.py", "lineno": 162, "msg": "hello %s you got:%s yes? %s, sure", "levelname": "INFO"}`,
+			want: &Log{
+				Msg:    `hello val1 you got:0 yes? true, sure`,
+				Time:   &time1,
+				Level:  "INFO",
+				Thread: "DistributorThread",
+				Path:   "/var/lib/file.py",
+				LineNo: 162,
+			},
+		},
 		{
 			name:    "jsonlog/list args",
 			logName: "file.jsonlog",

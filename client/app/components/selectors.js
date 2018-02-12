@@ -53,7 +53,12 @@ export const levelsSelector = createSelector(
 export const contentSelector = createSelector(
   appStateSelector,
   levelsSelector,
-  (app = Map(), levels = Set()) => app.get('content', List()).filter(line => !line.get('level') || levels.includes(line.get('level', '').toLowerCase()))
+  (app = Map(), levels = Set()) => app.get('content', List()).filter(line => !line.get('level') || levels.includes(line.get('level', '').toLowerCase())).map(line => {
+    if (line.get('path')) {
+      return line.set('msg', `${line.get('msg')}  (${line.get('path')}:${line.get('lineno')})`)
+    }
+    return line
+  })
 )
 
 const findMatches = (content = List(), query) => {

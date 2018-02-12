@@ -13,10 +13,13 @@ import (
 type Type string
 
 const (
-	KeyTime  = "time"
-	KeyLevel = "level"
-	KeyMsg   = "msg"
-	KeyArgs  = "args"
+	KeyTime       = "time"
+	KeyLevel      = "level"
+	KeyMsg        = "msg"
+	KeyArgs       = "args"
+	KeyThreadName = "thread"
+	KeyPathName   = "path"
+	KeyLineNo     = "lineno"
 )
 
 // noParserAfter determines how many line should be parsed before choosing a no-parser
@@ -161,6 +164,29 @@ func (p *parser) parseJson(line []byte) *Log {
 
 	if p.AppendArgs {
 		log.Msg += argsToMessage(j)
+	}
+
+	if jsonKey, ok := p.JsonMapping[KeyThreadName]; ok {
+		if log.Thread, ok = j[jsonKey].(string); !ok {
+			return nil
+		}
+		delete(j, jsonKey)
+	}
+
+	if jsonKey, ok := p.JsonMapping[KeyPathName]; ok {
+		if log.Path, ok = j[jsonKey].(string); !ok {
+			return nil
+		}
+		delete(j, jsonKey)
+	}
+
+	if jsonKey, ok := p.JsonMapping[KeyLineNo]; ok {
+		var floatLineNo float64
+		if floatLineNo, ok = j[jsonKey].(float64); !ok {
+			return nil
+		}
+		log.LineNo = int(floatLineNo)
+		delete(j, jsonKey)
 	}
 
 	return log
