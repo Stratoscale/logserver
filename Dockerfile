@@ -14,7 +14,7 @@ RUN yarn
 RUN npm run build
 
 FROM ubuntu:16.04
-RUN apt update && apt install libsystemd-dev
+RUN apt update && apt install -y libsystemd-dev
 COPY --from=server /logserver /usr/bin/logserver
 COPY --from=client /client/dist /client/dist
 ENTRYPOINT ["logserver"]
