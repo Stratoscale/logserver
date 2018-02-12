@@ -32,9 +32,9 @@
         "level": "levelname",
         "time": "created",
         "args": "args",
-	"threadName": "threadName",
-	"pathname": "pathname",
-	"lineno": "lineno"
+	    "thread": "threadName",
+	    "path": "pathname",
+	    "lineno": "lineno"
       },
       "time_formats": [
         "unix_float"
