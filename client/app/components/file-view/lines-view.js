@@ -100,7 +100,7 @@ class LinesView extends Component {
       if (showThreadName) {
         columns.unshift({
           width: 100,
-          name:  'threadName',
+          name:  'thread',
         })
       }
       if (showTimestamp) {
@@ -199,9 +199,9 @@ class LinesView extends Component {
           <Tag key={line.get('level')} color={colorByLevel(line.get('level'))}>{line.get('level')}</Tag> : null
         break
       }
-      case 'threadName': {
-        content = line.get('threadName') ?
-          <Tag key={line.get('threadName')} >{line.get('threadName')}</Tag> : null
+      case 'thread': {
+        content = line.get('thread') ?
+          <Tag key={line.get('thread')} >{line.get('thread')}</Tag> : null
         break
       }
       case 'timestamp': {

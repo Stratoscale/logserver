@@ -17,8 +17,8 @@ const (
 	KeyLevel      = "level"
 	KeyMsg        = "msg"
 	KeyArgs       = "args"
-	KeyThreadName = "threadName"
-	KeyPathName   = "pathname"
+	KeyThreadName = "thread"
+	KeyPathName   = "path"
 	KeyLineNo     = "lineno"
 )
 
@@ -167,14 +167,14 @@ func (p *parser) parseJson(line []byte) *Log {
 	}
 
 	if jsonKey, ok := p.JsonMapping[KeyThreadName]; ok {
-		if log.ThreadName, ok = j[jsonKey].(string); !ok {
+		if log.Thread, ok = j[jsonKey].(string); !ok {
 			return nil
 		}
 		delete(j, jsonKey)
 	}
 
 	if jsonKey, ok := p.JsonMapping[KeyPathName]; ok {
-		if log.PathName, ok = j[jsonKey].(string); !ok {
+		if log.Path, ok = j[jsonKey].(string); !ok {
 			return nil
 		}
 		delete(j, jsonKey)

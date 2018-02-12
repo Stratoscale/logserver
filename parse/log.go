@@ -10,16 +10,16 @@ import (
 )
 
 type Log struct {
-	Msg        string     `json:"msg"`
-	Level      string     `json:"level"`
-	Time       *time.Time `json:"time,omitempty"`
-	FS         string     `json:"fs"`
-	FileName   string     `json:"file_name"`
-	Line       int        `json:"line"`
-	Offset     int        `json:"offset"`
-	ThreadName string     `json:"threadName,omitempty"`
-	PathName   string     `json:"pathname,omitempty"`
-	LineNo     int        `json:"lineno"`
+	Msg      string     `json:"msg"`
+	Level    string     `json:"level"`
+	Time     *time.Time `json:"time,omitempty"`
+	FS       string     `json:"fs"`
+	FileName string     `json:"file_name"`
+	Line     int        `json:"line"`
+	Offset   int        `json:"offset"`
+	Thread   string     `json:"thread,omitempty"`
+	Path     string     `json:"path,omitempty"`
+	LineNo   int        `json:"lineno"`
 }
 
 func (l *Log) parseTime(timeFormats []string, timeString string) {
