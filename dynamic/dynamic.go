@@ -24,7 +24,7 @@ type Config struct {
 	source.Flags
 }
 
-func New(c Config, engineCfg engine.Config, routeCfg route.Config, p parse.Parse, cache gcache.Cache) (http.Handler, error) {
+func New(c Config, engineCfg engine.Config, p parse.Parse, cache gcache.Cache) (http.Handler, error) {
 	var err error
 	c.Root, err = filepath.Abs(c.Root)
 	if err != nil {
@@ -35,7 +35,6 @@ func New(c Config, engineCfg engine.Config, routeCfg route.Config, p parse.Parse
 		parse:     p,
 		cache:     cache,
 		engineCfg: engineCfg,
-		routeCfg:  routeCfg,
 	}
 	if h.MarkFile == "" {
 		h.MarkFile = defaultMarkFile
@@ -49,7 +48,6 @@ type handler struct {
 	cache     gcache.Cache
 	route     route.Config
 	engineCfg engine.Config
-	routeCfg  route.Config
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -89,17 +87,6 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	serverPath := root[len(h.Root):]
 	rtr := mux.NewRouter()
 
-	// add index.html serving at the serverPath which is the dynamic root
-	err = route.Index(rtr, serverPath, route.Config{
-		// BasePath is used to determined the websocket path
-		BasePath: filepath.Join(h.routeCfg.RootPath, serverPath),
-		// RootPath is for taking the static files, which are served by the root handler
-		RootPath: ""})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	// add websocket handler on the server root
 	route.Engine(rtr, "/", engine.New(h.engineCfg, src, h.parse, h.cache))
 
@@ -107,6 +94,18 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	// Handle with index on anything that has prefix of server path that did not match anything else
+	err = route.Index(rtr, "/", route.Config{
+		// BasePath is used to determined the websocket path
+		BasePath: serverPath,
+		// RootPath is for taking the static files, which are served by the root handler
+		RootPath: ""})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	http.StripPrefix(serverPath, rtr).ServeHTTP(w, r)
 }
 

@@ -23,15 +23,23 @@ var (
 )
 
 type Config struct {
-	BasePath string `json:"base_path"`
+	// RootPath is defined for changing the root path of serving. This is useful
+	// if the server is behind a proxy that changes the root path.
 	RootPath string `json:"root_path"`
+	// BasePath is to change the base path after the root path.
+	// It is used for dynamic mode where we have different locations for the index page.
+	BasePath string `json:"base_path"`
 }
 
+// Static serves static files
 func Static(r *mux.Router) {
 	r.PathPrefix(pathStatic + "/").Handler(http.StripPrefix(pathStatic, static))
 }
 
-func Index(r *mux.Router, basePath string, c Config) error {
+// Index mounts serving of index.html on a path prefix.
+// It uses a prefix since reloads of a page should give serving of the index.html page with the same url
+// for the javascript frontend.
+func Index(r *mux.Router, pathPrefix string, c Config) error {
 
 	if c.BasePath == "" && c.RootPath != "" {
 		c.BasePath = c.RootPath
@@ -42,7 +50,7 @@ func Index(r *mux.Router, basePath string, c Config) error {
 		return fmt.Errorf("executing index template: %s", err)
 	}
 
-	r.Path(basePath).HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	r.PathPrefix(pathPrefix).HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		if _, err := w.Write(index.Bytes()); err != nil {
 			log.WithError(err).Errorf("Writing index to response")
@@ -51,12 +59,14 @@ func Index(r *mux.Router, basePath string, c Config) error {
 	return nil
 }
 
+// Engine mounts the websocket handler on the router
 func Engine(r *mux.Router, basePath string, engine http.Handler) {
 	path := filepath.Join(basePath, pathWS)
 	log.Debugf("Adding engine route on %s", path)
 	r.Path(path).Handler(engine)
 }
 
+// Redirect mounts a redirect handler for a proxy on the router
 func Redirect(r *mux.Router, c Config) {
 	if c.RootPath == "" {
 		return

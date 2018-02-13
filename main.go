@@ -97,35 +97,38 @@ func main() {
 	route.Static(r)
 
 	if !options.dynamic {
+
 		s, err := source.New(cfg.Sources, cache)
 		failOnErr(err, "Creating config")
 		defer s.CloseSources()
 
-		failOnErr(route.Index(r, "/", cfg.Route), "Creating index")
-
-		// put websocket handler behind the root and behined the proxy path
+		// put websocket handler behind the root and behind the proxy path
+		// it must be before the redirect handlers because it is on the proxy path
 		eng := engine.New(cfg.Global, s, parser, cache)
 		route.Engine(r, "/", eng)
 		if cfg.Route.RootPath != "" && cfg.Route.RootPath != "/" {
 			route.Engine(r, cfg.Route.RootPath, eng)
 		}
 
+		// add redirect of request that are sent to a proxy path with the same URL without the proxy prefix
+		route.Redirect(r, cfg.Route)
+
+		// handle with index on any route that does not match anything else
+		failOnErr(route.Index(r, "/", cfg.Route), "Creating index")
+
 	} else {
 		var err error
-		h, err := dynamic.New(cfg.Dynamic, cfg.Global, cfg.Route, parser, cache)
+		h, err := dynamic.New(cfg.Dynamic, cfg.Global, parser, cache)
 		failOnErr(err, "Creating dynamic handler")
 		logMW := logrusmiddleware.Middleware{Logger: log.Logger}
 		h = logMW.Handler(h, "")
-		r.PathPrefix(cfg.Route.RootPath).Handler(http.StripPrefix(cfg.Route.RootPath, h))
+		r.PathPrefix("/").Handler(h)
 	}
 
 	// add debug handlers
 	if options.debug {
 		debug.PProfHandle(r)
 	}
-
-	// add redirect of request that are not to the proxy path
-	route.Redirect(r, cfg.Route)
 
 	log.Infof("Serving on http://%s", options.addr)
 	err = http.ListenAndServe(options.addr, r)
