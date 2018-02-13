@@ -31,10 +31,12 @@ const (
 
 // Config are global configuration parameter for logserver
 type Config struct {
-	ContentBatchSize int           `json:"content_batch_size"`
-	ContentBatchTime time.Duration `json:"content_batch_time"`
-	SearchMaxSize    int           `json:"search_max_size"`
-	CacheExpiration  time.Duration `json:"cache_expiration"`
+	ContentBatchSize  int           `json:"content_batch_size"`
+	ContentBatchTime  time.Duration `json:"content_batch_time"`
+	SearchMaxSize     int           `json:"search_max_size"`
+	CacheExpiration   time.Duration `json:"cache_expiration"`
+	ExcludeExtensions []string      `json:"exclude_extensions"`
+	ExcludeDirs       []string      `json:"exclude_dirs"`
 }
 
 // New returns a new websocket handler
@@ -49,19 +51,23 @@ func New(c Config, source source.Sources, parser parse.Parse, cache gcache.Cache
 		c.SearchMaxSize = defaultSearchMaxSize
 	}
 	h := &handler{
-		Config: c,
-		source: source,
-		parse:  parser,
-		cache:  cache,
+		Config:            c,
+		source:            source,
+		parse:             parser,
+		cache:             cache,
+		excludeDirs:       list2Map(c.ExcludeDirs),
+		excludeExtensions: list2Map(c.ExcludeExtensions),
 	}
 	return h
 }
 
 type handler struct {
 	Config
-	source source.Sources
-	parse  parse.Parse
-	cache  gcache.Cache
+	source            source.Sources
+	parse             parse.Parse
+	cache             gcache.Cache
+	excludeDirs       map[string]bool
+	excludeExtensions map[string]bool
 }
 
 // Path describes a file path
@@ -150,12 +156,20 @@ type FileInstance struct {
 	FS   string `json:"fs"`
 }
 
+func list2Map(list []string) map[string]bool {
+	ret := make(map[string]bool, len(list))
+	for _, s := range list {
+		ret[s] = true
+	}
+	return ret
+}
+
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Infof("New WS Client from: %s", r.RemoteAddr)
 	defer log.Info("Disconnected WS Client from: %s", r.RemoteAddr)
 	u := &websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
-		        return true
+			return true
 		},
 	}
 	conn, err := u.Upgrade(w, r, nil)
@@ -272,11 +286,7 @@ func (h *handler) serveTree(ctx context.Context, req Request, send chan<- *Respo
 	send <- resp
 }
 
-// srcTree returns a file tree from a single source
-func (h *handler) srcTree(ctx context.Context, req Request, src source.Source, c *combiner) {
-	const sep = string(os.PathSeparator)
-	path := src.FS.Join(req.Path...)
-
+func (h *handler) recurseTree(ctx context.Context, path string, src source.Source, f func(*fs.Walker)) {
 	walker := fs.WalkFS(path, src.FS)
 	for walker.Step() {
 		if err := ctx.Err(); err != nil {
@@ -288,9 +298,30 @@ func (h *handler) srcTree(ctx context.Context, req Request, src source.Source, c
 			continue
 		}
 
+		if walker.Stat().IsDir() {
+			if _, ok := h.excludeDirs[filepath.Base(walker.Path())]; ok {
+				walker.SkipDir()
+				continue
+			}
+		} else {
+			if _, ok := h.excludeExtensions[filepath.Ext(walker.Path())]; ok {
+				continue
+			}
+		}
+
+		f(walker)
+	}
+}
+
+// srcTree returns a file tree from a single source
+func (h *handler) srcTree(ctx context.Context, req Request, src source.Source, c *combiner) {
+	const sep = string(os.PathSeparator)
+	path := src.FS.Join(req.Path...)
+
+	h.recurseTree(ctx, path, src, func(walker *fs.Walker) {
 		key := strings.Trim(walker.Path(), sep)
 		if key == "" {
-			continue
+			return
 		}
 
 		c.add(
@@ -304,7 +335,7 @@ func (h *handler) srcTree(ctx context.Context, req Request, src source.Source, c
 				FS:   src.Name,
 			},
 		)
-	}
+	})
 }
 
 type combiner struct {
@@ -364,19 +395,10 @@ func (h *handler) search(ctx context.Context, req Request, send chan<- *Response
 }
 
 func (h *handler) searchNode(ctx context.Context, send chan<- *Response, req Request, node source.Source, path string, re *regexp.Regexp) {
-	var walker = fs.WalkFS(path, node.FS)
-	for walker.Step() {
-		if err := ctx.Err(); err != nil {
-			return
-		}
-
-		if err := walker.Err(); err != nil {
-			log.WithError(err).Errorf("Failed walk %s:%s", node.Name, path)
-			continue
-		}
+	h.recurseTree(ctx, path, node, func(walker *fs.Walker) {
 		filePath := walker.Path()
 		h.read(ctx, send, req, node, filePath, re)
-	}
+	})
 }
 
 func (h *handler) read(ctx context.Context, send chan<- *Response, req Request, node source.Source, path string, re *regexp.Regexp) {

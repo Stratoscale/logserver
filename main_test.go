@@ -39,7 +39,7 @@ func TestHandler(t *testing.T) {
 	parser, err := parse.New(cfg.Parsers)
 	require.Nil(t, err)
 
-	s := httptest.NewServer(engine.New(engine.Config{}, sources, parser, cache))
+	s := httptest.NewServer(engine.New(cfg.Global, sources, parser, cache))
 	defer s.Close()
 
 	tests := []struct {

@@ -53,5 +53,13 @@
   "dynamic": {
     "root": "./",
     "open_journal": "/journal"
+  },
+  "global": {
+    "exclude_extensions" : [
+      ".bin"
+    ],
+    "exclude_dirs" : [
+      "lttng"
+    ]
   }
 }
