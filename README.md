@@ -4,6 +4,14 @@ Logserver is a web log viewer that combines logs from several sources.
 
 ![diagram](./doc/diagram.png)
 
+### Screenshots
+
+![screenshot general view](./doc/screenshot-1.png)
+
+![screenshot log view](./doc/screenshot-2.png)
+
+![screenshot filter files](./doc/screenshot-3.png)
+
 ## Usage
 
 ### Install
