@@ -55,10 +55,10 @@
     "open_journal": "/journal"
   },
   "global": {
-    "exclude_extensions" : [
+    "exclude_extensions": [
       ".bin"
     ],
-    "exclude_dirs" : [
+    "exclude_dirs": [
       "lttng"
     ]
   }
