@@ -34,7 +34,8 @@
         "args": "args",
 	    "thread": "threadName",
 	    "path": "pathname",
-	    "lineno": "lineno"
+	    "lineno": "lineno",
+        "traceback": "exc_text"
       },
       "time_formats": [
         "unix_float"

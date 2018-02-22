@@ -20,18 +20,21 @@ const (
 	KeyThreadName = "thread"
 	KeyPathName   = "path"
 	KeyLineNo     = "lineno"
+	KeyTraceback  = "traceback"
 )
 
 // noParserAfter determines how many line should be parsed before choosing a no-parser
 // for a specific file
-const noParserAfter = 1000
+const noParserAfter = 200
 
 type Config struct {
 	Glob        string            `json:"glob"`
 	JsonMapping map[string]string `json:"json_mapping"`
 	Regexp      string            `json:"regexp"`
 	TimeFormats []string          `json:"time_formats"`
-	AppendArgs  bool              `json:"append_args"`
+	// For JSON mapping
+	// Add key=val to message with all unused key values of json
+	AppendArgs bool `json:"append_args"`
 }
 
 type Parse []parser
@@ -162,31 +165,36 @@ func (p *parser) parseJson(line []byte) *Log {
 		log.injectArgs(j[jsonKey])
 	}
 
-	if p.AppendArgs {
-		log.Msg += argsToMessage(j)
+	// append traceback
+	if jsonKey, ok := p.JsonMapping[KeyTraceback]; ok {
+		if tb, ok := j[jsonKey]; ok {
+			if tbStr, ok := tb.(string); ok {
+				log.Msg = log.Msg + "\n" + tbStr
+			}
+			delete(j, jsonKey)
+		}
 	}
 
 	if jsonKey, ok := p.JsonMapping[KeyThreadName]; ok {
-		if log.Thread, ok = j[jsonKey].(string); !ok {
-			return nil
-		}
+		log.Thread, _ = j[jsonKey].(string)
 		delete(j, jsonKey)
 	}
 
 	if jsonKey, ok := p.JsonMapping[KeyPathName]; ok {
-		if log.Path, ok = j[jsonKey].(string); !ok {
-			return nil
-		}
+		log.Path, _ = j[jsonKey].(string)
 		delete(j, jsonKey)
 	}
 
 	if jsonKey, ok := p.JsonMapping[KeyLineNo]; ok {
-		var floatLineNo float64
-		if floatLineNo, ok = j[jsonKey].(float64); !ok {
-			return nil
+		if ln, ok := j[jsonKey].(float64); ok {
+			log.LineNo = int(ln)
 		}
-		log.LineNo = int(floatLineNo)
 		delete(j, jsonKey)
+	}
+
+	// append all additional not used key-values
+	if p.AppendArgs {
+		log.Msg += argsToMessage(j)
 	}
 
 	return log
