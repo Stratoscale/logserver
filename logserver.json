@@ -1,0 +1,24 @@
+{
+  "parsers": [
+    {
+      "glob": "*.stratolog",
+      "json_mapping": {"msg": "msg", "level": "levelname", "time": "created", "args": "args"},
+      "time_formats": ["unix_float"]
+    },
+    {
+      "glob": "*.log",
+      "json_mapping": {"msg": "msg", "level": "level", "time": "ts"},
+      "time_formats": ["01/02-15:04:05.000"],
+      "append_args": true
+    },
+    {
+      "regexp": "(?P<timestamp>\\d{4}-\\d{2}-\\d{2}\\W\\d{2}:\\d{2}:\\d{2},\\d{3}.\\d{3})\\W\\d+\\W(?P<level>[[:alpha:]]+)\\W(?P<module>[^\\.]+)\\.(?P<function>[^\\W]+)\\W\\[[^]+]\\]\\W(?P<msg>.*)",
+      "time_formats": ["2006-01-02 15:04:05.000"]
+    }
+  ],
+  "dynamic": {
+    "root": "/logs",
+    "open_journal": "/logs.tar.gz/var/log/journal",
+    "open_tar": true
+  }
+}
