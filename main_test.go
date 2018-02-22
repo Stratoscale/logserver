@@ -90,6 +90,18 @@ func TestHandler(t *testing.T) {
 							LineNo:   162,
 							Path:     "/usr/share/stratostorage/mancala_management_service.egg/mancala/management/distributor/distributor.py",
 						},
+						{
+							Msg:      "Failed\nTraceback (most recent call last):\n  File \"a.py\", line 4, in <module>\n    a()\n  File \"a.py\", line 2, in \n    raise Exception()\nException",
+							Level:    "ERROR",
+							Time:     mustParseTime("2017-12-25T16:23:05+02:00"),
+							FS:       "node1",
+							FileName: "mancala.stratolog",
+							Line:     4,
+							Offset:   2097,
+							Thread:   "DistributorThread",
+							LineNo:   162,
+							Path:     "/usr/share/stratostorage/mancala_management_service.egg/mancala/management/distributor/distributor.py",
+						},
 					},
 				},
 				{
@@ -269,7 +281,7 @@ func TestHandler(t *testing.T) {
 							Key:       "mancala.stratolog",
 							Path:      engine.Path{"mancala.stratolog"},
 							IsDir:     false,
-							Instances: []engine.FileInstance{{Size: 2100, FS: "node1"}},
+							Instances: []engine.FileInstance{{Size: 2672, FS: "node1"}},
 						},
 						{
 							Key:   "service1.log",
