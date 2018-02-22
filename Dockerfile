@@ -1,4 +1,4 @@
-FROM golang:1.9.3 as server
+FROM golang:1.10 as server
 WORKDIR /go/src/github.com/Stratoscale/logserver
 #
 RUN apt update && apt install libsystemd-dev
