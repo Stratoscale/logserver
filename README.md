@@ -1,6 +1,6 @@
 # logserver
 
-![docker](https://img.shields.io/docker/build/stratoscale/logserver.svg)
+[![docker](https://img.shields.io/docker/build/stratoscale/logserver.svg)](https://hub.docker.com/r/stratoscale/logserver)
 
 Logserver is a web log viewer that combines logs from several sources.
 
