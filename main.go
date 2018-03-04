@@ -11,6 +11,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/Stratoscale/logserver/cache"
 	"github.com/Stratoscale/logserver/debug"
+	"github.com/Stratoscale/logserver/download"
 	"github.com/Stratoscale/logserver/dynamic"
 	"github.com/Stratoscale/logserver/engine"
 	"github.com/Stratoscale/logserver/parse"
@@ -102,12 +103,17 @@ func main() {
 		failOnErr(err, "Creating config")
 		defer s.CloseSources()
 
+		dl := download.New(cfg.Route.RootPath, s, cache)
+		eng := engine.New(cfg.Global, s, parser, cache)
+
 		// put websocket handler behind the root and behind the proxy path
 		// it must be before the redirect handlers because it is on the proxy path
-		eng := engine.New(cfg.Global, s, parser, cache)
 		route.Engine(r, "/", eng)
+		route.Download(r, "/", dl)
+
 		if cfg.Route.RootPath != "" && cfg.Route.RootPath != "/" {
 			route.Engine(r, cfg.Route.RootPath, eng)
+			route.Download(r, cfg.Route.RootPath, dl)
 		}
 
 		// add redirect of request that are sent to a proxy path with the same URL without the proxy prefix

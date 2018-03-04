@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"sort"
@@ -8,7 +9,14 @@ import (
 	"testing"
 	"time"
 
+	"io/ioutil"
+
+	"archive/zip"
+
+	"os"
+
 	"github.com/Sirupsen/logrus"
+	"github.com/Stratoscale/logserver/download"
 	"github.com/Stratoscale/logserver/engine"
 	"github.com/Stratoscale/logserver/parse"
 	"github.com/Stratoscale/logserver/source"
@@ -18,19 +26,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func mustParseTime(s string) *time.Time {
-	t, err := time.Parse(time.RFC3339, s)
-	if err != nil {
-		panic(err)
+func init() {
+	if testing.Verbose() {
+		logrus.StandardLogger().SetLevel(logrus.DebugLevel)
 	}
-	return &t
 }
 
 func TestHandler(t *testing.T) {
 	t.Parallel()
-	if testing.Verbose() {
-		logrus.StandardLogger().SetLevel(logrus.DebugLevel)
-	}
+
 	cfg := loadConfig("./example/logserver.json")
 	cache := gcache.New(0).Build()
 
@@ -365,6 +369,129 @@ func TestHandler(t *testing.T) {
 	}
 }
 
+func TestDownloads(t *testing.T) {
+	t.Parallel()
+
+	cfg := loadConfig("./example/logserver.json")
+	cache := gcache.New(0).Build()
+
+	sources, err := source.New(cfg.Sources, cache)
+	require.Nil(t, err)
+
+	s := httptest.NewServer(download.New("/", sources, cache))
+
+	tests := []struct {
+		name           string
+		req            *http.Request
+		wantErr        bool
+		wantStatusCode int
+		wantLocation   string
+		want           []byte
+		wantFiles      map[string]bool
+	}{
+		{
+			name:           "single file",
+			req:            mustRequest(http.MethodGet, s.URL+"/service1.log?fs=node1", nil),
+			wantStatusCode: http.StatusOK,
+			want:           []byte("find me"),
+		},
+		{
+			name:           "empty file",
+			req:            mustRequest(http.MethodGet, s.URL+"/service1.log?fs=node2", nil),
+			wantStatusCode: http.StatusOK,
+			want:           []byte(""),
+		},
+		{
+			name:           "not found",
+			req:            mustRequest(http.MethodGet, s.URL+"/not-exists.log?fs=node2", nil),
+			wantStatusCode: http.StatusNotFound,
+		},
+		{
+			name:           "multiple files redirect",
+			req:            mustRequest(http.MethodGet, s.URL+"/service1.log", nil),
+			wantStatusCode: http.StatusTemporaryRedirect,
+			wantLocation:   "/service1.log.zip",
+		},
+		{
+			name:           "multiple files redirect with query",
+			req:            mustRequest(http.MethodGet, s.URL+"/service1.log?fs=node1&fs=node2", nil),
+			wantStatusCode: http.StatusTemporaryRedirect,
+			wantLocation:   "/service1.log.zip?fs=node1&fs=node2",
+		},
+		{
+			name:           "multiple files",
+			req:            mustRequest(http.MethodGet, s.URL+"/service1.log.zip", nil),
+			wantStatusCode: http.StatusOK,
+			wantFiles: map[string]bool{
+				"node1-service1.log": true,
+				"node2-service1.log": true,
+				"node3-service1.log": true,
+			},
+		},
+		{
+			name:           "multiple files with query",
+			req:            mustRequest(http.MethodGet, s.URL+"/service1.log.zip?fs=node1&fs=node2", nil),
+			wantStatusCode: http.StatusOK,
+			wantFiles: map[string]bool{
+				"node1-service1.log": true,
+				"node2-service1.log": true,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			t.Log(tt.req.URL.String())
+
+			c := &http.Client{
+				CheckRedirect: func(req *http.Request, via []*http.Request) error {
+					return http.ErrUseLastResponse
+				},
+			}
+
+			resp, err := c.Do(tt.req)
+			if tt.wantErr {
+				assert.NotNil(t, err)
+				return
+			}
+
+			if assert.Nil(t, err) {
+				defer resp.Body.Close()
+				assert.Equal(t, tt.wantStatusCode, resp.StatusCode)
+
+				switch {
+				case tt.want != nil:
+					got, err := ioutil.ReadAll(resp.Body)
+					require.Nil(t, err)
+					assert.Equal(t, tt.want, got)
+				case tt.wantFiles != nil:
+					tp, err := ioutil.TempFile("/tmp", "dl-test-")
+					require.Nil(t, err)
+					defer tp.Close()
+					defer os.Remove(tp.Name())
+
+					io.Copy(tp, resp.Body)
+
+					z, err := zip.OpenReader(tp.Name())
+					require.Nil(t, err)
+					assert.Equal(t, len(tt.wantFiles), len(z.File))
+					for _, f := range z.File {
+						assert.True(t, tt.wantFiles[f.Name])
+					}
+
+				case tt.wantLocation != "":
+					assert.Equal(t, tt.wantLocation, resp.Header.Get("Location"))
+				}
+			}
+
+		})
+	}
+
+}
+
 func sortResp(responses []engine.Response) {
 	sort.Slice(responses, func(i, j int) bool { return strings.Compare(responses[i].Meta.FS, responses[j].Meta.FS) == -1 })
 	for _, resp := range responses {
@@ -383,4 +510,20 @@ func get(t *testing.T, conn *websocket.Conn) <-chan engine.Response {
 		ch <- got
 	}()
 	return ch
+}
+
+func mustParseTime(s string) *time.Time {
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		panic(err)
+	}
+	return &t
+}
+
+func mustRequest(method, url string, body io.Reader) *http.Request {
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		panic(err)
+	}
+	return req
 }

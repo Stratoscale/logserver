@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	pathStatic = "/_static"
-	pathWS     = "/_ws"
+	pathStatic   = "/_static"
+	pathWS       = "/_ws"
+	pathDownload = "/_dl"
 )
 
 var (
@@ -64,6 +65,13 @@ func Engine(r *mux.Router, basePath string, engine http.Handler) {
 	path := filepath.Join(basePath, pathWS)
 	log.Debugf("Adding engine route on %s", path)
 	r.Path(path).Handler(engine)
+}
+
+// Download mounts the websocket handler on the router
+func Download(r *mux.Router, basePath string, h http.Handler) {
+	path := filepath.Join(basePath, pathDownload)
+	log.Debugf("Adding download route on %s", path)
+	r.PathPrefix(path).Handler(http.StripPrefix(path, h))
 }
 
 // Redirect mounts a redirect handler for a proxy on the router
