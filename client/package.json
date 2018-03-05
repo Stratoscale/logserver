@@ -5,6 +5,7 @@
   "private": true,
   "dependencies": {
     "antd": "^3.0.3",
+    "assets-webpack-plugin": "^3.5.1",
     "classnames": "^2.2.0",
     "encoding": "0.1.11",
     "enzyme-adapter-react-16": "^1.0.2",

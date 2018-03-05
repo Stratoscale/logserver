@@ -28,6 +28,10 @@ module.exports = function getDevServer(ROOT_PATH, apiProxy) {
         // },
         ws:     true,
       },
+      [`${basePath}/_dl/*`]: {
+        target: 'http://localhost:8888',
+        secure: false,
+      }
       // '/ui/*': {
       //   target:      urlPrefix + uiBackendServer,
       //   secure:      false,
