@@ -90,7 +90,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// add websocket handler on the server root
 	route.Engine(rtr, "/", engine.New(h.engineCfg, src, h.parse, h.cache))
-	route.Download(rtr, "/", download.New(h.Root, src, h.cache))
+	route.Download(rtr, "/", download.New(filepath.Join(serverPath, "_dl"), src, h.cache))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

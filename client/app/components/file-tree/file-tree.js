@@ -26,7 +26,7 @@ const File = ({path, is_dir, instances, key, showFullPath = false}) => {
     content       = <span>
       <Icon type={'file'}/> <Link to={viewURL}>{filename}</Link>
       {instances.map(instance => <Tag key={instance.fs}><Link to={`${viewURL}?fs=${instance.fs}`}>{instance.fs} <span className="size">({filesize(instance.size, {fixed: 0}).human()})</span></Link></Tag>)}
-      <a href={`${window.location.origin}/${window.__INIT__.basePath}_dl/${path.join('/')}`} target="_blank" title="Download logs"><Icon type="download"/></a>
+      <a href={`${window.location.origin}${window.__INIT__.basePath}/_dl/${path.join('/')}`} target="_blank" title="Download logs"><Icon type="download"/></a>
     </span>
   }
   return (

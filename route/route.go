@@ -71,7 +71,7 @@ func Engine(r *mux.Router, basePath string, engine http.Handler) {
 func Download(r *mux.Router, basePath string, h http.Handler) {
 	path := filepath.Join(basePath, pathDownload)
 	log.Debugf("Adding download route on %s", path)
-	r.PathPrefix(path).Handler(http.StripPrefix(path, h))
+	r.PathPrefix(path + "/").Handler(http.StripPrefix(path, h))
 }
 
 // Redirect mounts a redirect handler for a proxy on the router

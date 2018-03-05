@@ -33,7 +33,6 @@ type handler struct {
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
 	// collect all wanted sources
 	sources := querySources(r.URL.Query())
 	var downloadSources []source.Source

@@ -180,7 +180,7 @@ class FileView extends Component {
             })
           }}>Thread Name</Checkbox>
 
-          <a href={`${window.location.origin}/${window.__INIT__.basePath}_dl/${path.join('/')}?fs=${this.state.activeFs}`} target="_blank"><Icon type="eye"/> Show Original</a>
+          <a href={`${window.location.origin}${window.__INIT__.basePath}/_dl/${path.join('/')}?fs=${this.state.activeFs}`} target="_blank"><Icon type="eye"/> Show Original</a>
 
 
         </div>

@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 
+	"path/filepath"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/Stratoscale/logserver/cache"
 	"github.com/Stratoscale/logserver/debug"
@@ -103,7 +105,7 @@ func main() {
 		failOnErr(err, "Creating config")
 		defer s.CloseSources()
 
-		dl := download.New(cfg.Route.RootPath, s, cache)
+		dl := download.New(filepath.Join(cfg.Route.RootPath, "_dl"), s, cache)
 		eng := engine.New(cfg.Global, s, parser, cache)
 
 		// put websocket handler behind the root and behind the proxy path
