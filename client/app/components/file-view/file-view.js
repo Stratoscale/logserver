@@ -12,7 +12,7 @@ import {LinesView} from 'file-view/lines-view'
 import {FSBar} from 'fs-bar'
 import {navigate} from 'utils'
 import Loader from 'loader/loader'
-import {Checkbox} from 'antd'
+import {Checkbox, Icon} from 'antd'
 import filesize from 'file-size'
 import {ALL_LEVELS} from 'reducers/app-reducers'
 
@@ -179,6 +179,8 @@ class FileView extends Component {
               showThreadName: checked,
             })
           }}>Thread Name</Checkbox>
+
+          <a href={`${window.location.origin}/${window.__INIT__.basePath}_dl/${path.join('/')}?fs=${this.state.activeFs}`} target="_blank"><Icon type="eye"/> Show Original</a>
 
 
         </div>
