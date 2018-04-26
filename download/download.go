@@ -137,7 +137,7 @@ func (h *handler) downloadMany(w http.ResponseWriter, r *http.Request, sources [
 func contentType(path string) string {
 	switch filepath.Ext(path) {
 	default:
-		return "application/text"
+		return "html/text"
 	}
 }
 
