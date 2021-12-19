@@ -20,7 +20,7 @@ Logserver is a web log viewer that combines logs from several sources.
 
 * Get the binary with go get:
 
-`go get -u githbub.com/Stratoscale/logserver`
+`go get -u github.com/Stratoscale/logserver`
 
 ### Run a Docker Container
 
